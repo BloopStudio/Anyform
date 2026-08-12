@@ -47,8 +47,9 @@ version qui vient d'être incrémenté, pas l'ancien.
 
 Chaque build publie une [release GitHub](https://github.com/TheDEMON78/converter/releases)
 taguée avec le numéro de version (`v1.0.7`, `v1.0.8`...), les fichiers portant eux aussi la
-version dans leur nom (`Anyform-1.0.7-win-x64.exe`, etc.) — l'historique complet des
-versions reste donc accessible, la plus récente étant marquée **Latest**. Les fichiers sont
+version dans leur nom (`Anyform-1.0.7-win-x64.exe`, etc.), la plus récente étant marquée
+**Latest**. Seules les **10 releases les plus récentes** sont conservées : les plus
+anciennes sont supprimées automatiquement à la fin de chaque build. Les fichiers sont
 aussi disponibles 30 jours dans les **Artifacts** du run pour du débogage rapide. Les builds
 ne sont pas signés (pas de certificat) : Windows SmartScreen et macOS Gatekeeper afficheront
 un avertissement au premier lancement.
