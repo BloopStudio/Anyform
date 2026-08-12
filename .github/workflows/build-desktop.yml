@@ -106,6 +106,15 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Supprimer les anciens artefacts de la release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view desktop-latest --repo "${{ github.repository }}" --json assets \
+            --jq '.assets[].name' 2>/dev/null | while read -r asset; do
+            gh release delete-asset desktop-latest "$asset" --repo "${{ github.repository }}" -y
+          done || true
+
       - name: Publier/mettre à jour la release "desktop-latest"
         uses: softprops/action-gh-release@v2
         with:
