@@ -1,10 +1,27 @@
 # converter
 
 Convertisseur de formats de fichiers, avec une interface web (drag & drop) déployée sur
-GitHub Pages. Deux autres branches proposent la même logique sous d'autres formes :
-[`cli-converter`](https://github.com/TheDEMON78/converter/pull/2) (ligne de commande) et
+GitHub Pages. Trois autres branches proposent la même logique sous d'autres formes :
+[`cli-converter`](https://github.com/TheDEMON78/converter/pull/2) (ligne de commande),
 [`browser-extension`](https://github.com/TheDEMON78/converter/tree/browser-extension)
-(extension Chrome/Edge).
+(extension Chrome/Edge) et cette branche `desktop-app` (application de bureau Electron).
+
+## App de bureau (Electron)
+
+Wrapper Electron autour de l'app web : même interface, même code de conversion
+(`public/`), sans rien changer — juste une fenêtre native au lieu du navigateur.
+
+```bash
+npm install
+npm start
+```
+
+Pour construire un exécutable distribuable (`.dmg` sur macOS, `.exe`/NSIS sur Windows,
+`.AppImage` sur Linux) :
+
+```bash
+npm run dist
+```
 
 ## App web — 100% dans le navigateur
 
@@ -46,6 +63,8 @@ npx serve public
 
 ## Structure
 
+- `main.js` / `preload.js` — process principal Electron (fenêtre, menu natif)
+- `build/icon.png` — icône de l'application
 - `public/convert.js` — conversion d'images (Canvas API + ImageTracer.js + heic2any + UTIF.js)
 - `public/data.js` — conversion de données (CSV/JSON/XLSX)
 - `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
