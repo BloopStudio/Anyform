@@ -1,0 +1,40 @@
+name: Incrémenter la version
+
+on:
+  push:
+    branches: [browser-extension]
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Incrémenter le patch de manifest.json
+        run: |
+          NEW_VERSION=$(node -p "
+            const fs = require('fs');
+            const m = JSON.parse(fs.readFileSync('extension/manifest.json', 'utf8'));
+            const [major, minor, patch] = m.version.split('.').map(Number);
+            m.version = \`\${major}.\${minor}.\${patch + 1}\`;
+            fs.writeFileSync('extension/manifest.json', JSON.stringify(m, null, 2) + '\n');
+            m.version;
+          ")
+          echo "NEW_VERSION=${NEW_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Injecter le numéro de version dans popup.html
+        run: sed -i "s/__APP_VERSION__/${NEW_VERSION}/g; s/v[0-9]\+\.[0-9]\+\.[0-9]\+ — par BloopStudio/v${NEW_VERSION} — par BloopStudio/g" extension/popup.html
+
+      - name: Commit et push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add extension/manifest.json extension/popup.html
+          git commit -m "chore: bump version to ${NEW_VERSION} [skip ci]"
+          git push
