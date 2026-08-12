@@ -75,7 +75,7 @@ const ALL_FORMATS = [...new Set([...IMAGE_FORMATS, ...DATA_FORMATS, ...AUDIO_FOR
 const program = new Command();
 
 program
-  .name('converter')
+  .name('anyform')
   .description(
     'Convertit des fichiers image, données, audio ou vidéo vers un autre format ' +
       '(détection automatique du type selon l\'extension).'

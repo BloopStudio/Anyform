@@ -1,4 +1,4 @@
-# converter
+# Anyform
 
 Convertisseur de formats de fichiers, en ligne de commande.
 Une branche `web-converter` propose la même logique via une interface web (drag & drop),
@@ -21,18 +21,24 @@ l'extension.
 
 ```bash
 npm install
-npm link   # rend la commande `converter` disponible globalement (optionnel)
+npm link   # rend la commande `anyform` disponible globalement (optionnel)
 ```
 
 ## Utilisation
 
 ```bash
-node bin/converter.js image.svg -t png
-node bin/converter.js *.png -t webp -o ./out --quality 80
-node bin/converter.js photo.jpg -t svg
-node bin/converter.js data.csv -t xlsx
-node bin/converter.js musique.wav -t mp3
-node bin/converter.js clip.mov -t mp4
+node bin/anyform.js image.svg -t png
+node bin/anyform.js *.png -t webp -o ./out --quality 80
+node bin/anyform.js photo.jpg -t svg
+node bin/anyform.js data.csv -t xlsx
+node bin/anyform.js musique.wav -t mp3
+node bin/anyform.js clip.mov -t mp4
+```
+
+Ou, après `npm link` :
+
+```bash
+anyform image.svg -t png
 ```
 
 Options :
@@ -47,4 +53,4 @@ Options :
 - `lib/convert.js` — conversion d'images (sharp + potrace)
 - `lib/data.js` — conversion de données (SheetJS)
 - `lib/media.js` — conversion audio/vidéo (ffmpeg-static)
-- `bin/converter.js` — interface en ligne de commande (détection de type, routage)
+- `bin/anyform.js` — interface en ligne de commande (détection de type, routage)

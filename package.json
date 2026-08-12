@@ -1,14 +1,14 @@
 {
-  "name": "converter-cli",
+  "name": "anyform-cli",
   "version": "1.0.0",
-  "description": "Convertisseur de formats (images, données, audio, vidéo) - ligne de commande",
+  "description": "Anyform - convertisseur de formats (images, données, audio, vidéo) - ligne de commande",
   "main": "lib/convert.js",
   "type": "commonjs",
   "bin": {
-    "converter": "./bin/converter.js"
+    "anyform": "./bin/anyform.js"
   },
   "scripts": {
-    "start": "node bin/converter.js"
+    "start": "node bin/anyform.js"
   },
   "dependencies": {
     "commander": "^12.1.0",
