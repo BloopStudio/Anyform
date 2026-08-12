@@ -1,15 +1,21 @@
 # converter
 
 Convertisseur de formats de fichiers, en ligne de commande.
-Une branche `web-converter` propose la même logique via une interface web (drag & drop).
+Une branche `web-converter` propose la même logique via une interface web (drag & drop),
+déployée sur GitHub Pages.
 
-## Formats supportés (v1 — images)
+## Formats supportés
 
-- Entrée : SVG, PNG, JPG, WebP, TIFF, GIF, AVIF
-- Sortie : PNG, JPG, WebP, TIFF, GIF, AVIF, SVG (vectorisation via `potrace` pour les images raster)
+- Images : SVG, PNG, JPG, WebP, TIFF, GIF, AVIF (sharp + potrace pour la vectorisation raster → SVG)
+- Données : CSV ⇄ JSON ⇄ XLSX (SheetJS, build patché sans vulnérabilité connue)
+- Audio : WAV, MP3, OGG, FLAC, AAC, M4A
+- Vidéo : MP4, WebM, MOV, AVI, MKV
 
-D'autres types de fichiers (documents, audio, vidéo...) pourront être ajoutés par la suite en
-étendant `lib/convert.js`.
+Audio et vidéo passent par le binaire `ffmpeg` statique fourni par `ffmpeg-static` (installé
+automatiquement avec `npm install`, aucune install système requise).
+
+Le type de fichier (image/données/audio/vidéo) est détecté automatiquement à partir de
+l'extension.
 
 ## Installation
 
@@ -24,6 +30,9 @@ npm link   # rend la commande `converter` disponible globalement (optionnel)
 node bin/converter.js image.svg -t png
 node bin/converter.js *.png -t webp -o ./out --quality 80
 node bin/converter.js photo.jpg -t svg
+node bin/converter.js data.csv -t xlsx
+node bin/converter.js musique.wav -t mp3
+node bin/converter.js clip.mov -t mp4
 ```
 
 Options :
@@ -35,5 +44,7 @@ Options :
 
 ## Structure
 
-- `lib/convert.js` — logique de conversion (réutilisable, indépendante de la CLI)
-- `bin/converter.js` — interface en ligne de commande
+- `lib/convert.js` — conversion d'images (sharp + potrace)
+- `lib/data.js` — conversion de données (SheetJS)
+- `lib/media.js` — conversion audio/vidéo (ffmpeg-static)
+- `bin/converter.js` — interface en ligne de commande (détection de type, routage)
