@@ -1,7 +1,7 @@
 {
   "name": "converter-cli",
   "version": "1.0.0",
-  "description": "Convertisseur de formats d'images (SVG, PNG, JPG, WebP...) - ligne de commande",
+  "description": "Convertisseur de formats (images, données, audio, vidéo) - ligne de commande",
   "main": "lib/convert.js",
   "type": "commonjs",
   "bin": {
@@ -13,7 +13,9 @@
   "dependencies": {
     "commander": "^12.1.0",
     "sharp": "^0.35.3",
-    "potrace": "^2.1.8"
+    "potrace": "^2.1.8",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "ffmpeg-static": "^5.2.0"
   },
   "engines": {
     "node": ">=18"
