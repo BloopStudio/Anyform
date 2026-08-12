@@ -71,7 +71,7 @@ const OUTPUT_FORMAT_OPTIONS = {
   ],
 };
 
-const categorySelect = document.getElementById('category');
+const categoryTabs = document.getElementById('categoryTabs');
 const sourceFormatSelect = document.getElementById('sourceFormat');
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
@@ -84,14 +84,88 @@ const statusEl = document.getElementById('status');
 const previewRow = document.getElementById('previewRow');
 const previewBefore = document.getElementById('previewBefore');
 const previewAfter = document.getElementById('previewAfter');
+const progressWrap = document.getElementById('progressWrap');
+const progressBar = document.getElementById('progressBar');
+const progressLabel = document.getElementById('progressLabel');
+const resultCard = document.getElementById('resultCard');
+const resultName = document.getElementById('resultName');
+const resultMeta = document.getElementById('resultMeta');
+const downloadBtn = document.getElementById('downloadBtn');
+const resetBtn = document.getElementById('resetBtn');
 
 let selectedFile = null;
 let previewBeforeUrl = null;
 let previewAfterUrl = null;
+let resultBlob = null;
+let resultUrl = null;
+let resultFileName = '';
+let currentCategoryValue = categoryTabs.querySelector('.tab[aria-selected="true"]')?.dataset.category || 'image';
+
+function currentCategory() {
+  return currentCategoryValue;
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} o`;
+  const units = ['Ko', 'Mo', 'Go'];
+  let value = bytes / 1024;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(value < 10 ? 1 : 0)} ${units[unitIndex]}`;
+}
 
 function setStatus(message, type = '') {
   statusEl.textContent = message;
   statusEl.className = `status ${type}`;
+}
+
+function showProgress(label) {
+  progressWrap.hidden = false;
+  progressBar.classList.add('indeterminate');
+  progressBar.style.width = '35%';
+  progressLabel.textContent = label;
+}
+
+function updateProgress(percent) {
+  progressBar.classList.remove('indeterminate');
+  progressBar.style.width = `${percent}%`;
+  progressLabel.textContent = `${percent}%`;
+}
+
+function hideProgress() {
+  progressWrap.hidden = true;
+  progressBar.classList.remove('indeterminate');
+  progressBar.style.width = '0%';
+}
+
+function hideResult() {
+  resultCard.hidden = true;
+  if (resultUrl) URL.revokeObjectURL(resultUrl);
+  resultUrl = null;
+  resultBlob = null;
+}
+
+function showResult(blob, fileName) {
+  resultBlob = blob;
+  resultFileName = fileName;
+  if (resultUrl) URL.revokeObjectURL(resultUrl);
+  resultUrl = URL.createObjectURL(blob);
+  resultName.textContent = fileName;
+  resultMeta.textContent = formatBytes(blob.size);
+  resultCard.hidden = false;
+}
+
+function setBusy(busy) {
+  convertBtn.disabled = busy || !selectedFile;
+  convertBtn.classList.toggle('is-loading', busy);
+  for (const tab of categoryTabs.querySelectorAll('.tab')) tab.disabled = busy;
+  sourceFormatSelect.disabled = busy;
+  formatSelect.disabled = busy;
+  scaleSelect.disabled = busy;
+  dropzone.classList.toggle('is-disabled', busy);
 }
 
 function populateSelect(selectEl, options, { preserveSelection = false } = {}) {
@@ -112,10 +186,6 @@ function populateSelect(selectEl, options, { preserveSelection = false } = {}) {
   }
 }
 
-function currentCategory() {
-  return categorySelect.value;
-}
-
 function updateAcceptedFileType() {
   fileInput.accept = `.${sourceFormatSelect.value}`;
 }
@@ -127,8 +197,15 @@ function refreshOutputOptions() {
   populateSelect(formatSelect, options, { preserveSelection: true });
 }
 
-function onCategoryChange() {
-  const category = currentCategory();
+function onCategoryChange(category) {
+  currentCategoryValue = category;
+
+  for (const tab of categoryTabs.querySelectorAll('.tab')) {
+    const isActive = tab.dataset.category === category;
+    tab.setAttribute('aria-selected', String(isActive));
+    tab.classList.toggle('is-active', isActive);
+  }
+
   populateSelect(sourceFormatSelect, INPUT_FORMAT_OPTIONS[category]);
   refreshOutputOptions();
   syncUiForCategory();
@@ -137,13 +214,15 @@ function onCategoryChange() {
 function syncUiForCategory() {
   const category = currentCategory();
   updateAcceptedFileType();
-  scaleRow.style.display = category === 'image' ? 'flex' : 'none';
+  scaleRow.hidden = category !== 'image';
   setFile(null);
 }
 
 function setFile(file) {
   selectedFile = file;
   fileNameEl.textContent = file ? file.name : '';
+  hideResult();
+  hideProgress();
 
   if (previewBeforeUrl) URL.revokeObjectURL(previewBeforeUrl);
   if (previewAfterUrl) URL.revokeObjectURL(previewAfterUrl);
@@ -184,7 +263,10 @@ function setFile(file) {
   setStatus('');
 }
 
-categorySelect.addEventListener('change', onCategoryChange);
+for (const tab of categoryTabs.querySelectorAll('.tab')) {
+  tab.addEventListener('click', () => onCategoryChange(tab.dataset.category));
+}
+
 sourceFormatSelect.addEventListener('change', () => {
   updateAcceptedFileType();
   refreshOutputOptions();
@@ -192,6 +274,12 @@ sourceFormatSelect.addEventListener('change', () => {
 });
 
 dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    fileInput.click();
+  }
+});
 
 fileInput.addEventListener('change', () => {
   if (fileInput.files[0]) setFile(fileInput.files[0]);
@@ -200,7 +288,7 @@ fileInput.addEventListener('change', () => {
 ['dragenter', 'dragover'].forEach((evt) => {
   dropzone.addEventListener(evt, (e) => {
     e.preventDefault();
-    dropzone.classList.add('dragover');
+    if (!dropzone.classList.contains('is-disabled')) dropzone.classList.add('dragover');
   });
 });
 
@@ -212,6 +300,7 @@ fileInput.addEventListener('change', () => {
 });
 
 dropzone.addEventListener('drop', (e) => {
+  if (dropzone.classList.contains('is-disabled')) return;
   const file = e.dataTransfer.files[0];
   if (file) setFile(file);
 });
@@ -220,10 +309,12 @@ async function runConversion(file, category, format, scale) {
   if (category === 'image') return convertFile(file, format, { scale });
   if (category === 'data') return convertData(file, format);
   if (category === 'audio') {
-    return convertAudio(file, format, (percent) => setStatus(`Conversion en cours… ${percent}%`));
+    showProgress('Chargement du moteur audio (une seule fois par session)…');
+    return convertAudio(file, format, (percent) => updateProgress(percent));
   }
   if (category === 'video') {
-    return convertVideo(file, format, (percent) => setStatus(`Conversion en cours… ${percent}%`));
+    showProgress('Chargement du moteur vidéo (une seule fois par session)…');
+    return convertVideo(file, format, (percent) => updateProgress(percent));
   }
   throw new Error('Type de fichier non supporté.');
 }
@@ -235,12 +326,9 @@ convertBtn.addEventListener('click', async () => {
   const format = formatSelect.value;
   const scale = parseInt(scaleSelect.value, 10);
 
-  convertBtn.disabled = true;
-  setStatus(
-    category === 'video' || category === 'audio'
-      ? 'Chargement du moteur audio/vidéo (première fois : ~30 Mo, une seule fois par session)…'
-      : 'Conversion en cours…'
-  );
+  hideResult();
+  setBusy(true);
+  setStatus('Conversion en cours…');
 
   try {
     const blob = await runConversion(selectedFile, category, format, scale);
@@ -251,22 +339,44 @@ convertBtn.addEventListener('click', async () => {
       previewAfter.src = previewAfterUrl;
     }
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
     const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
+    const outName = `${baseName}.${format}`;
+
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
     a.href = url;
-    a.download = `${baseName}.${format}`;
+    a.download = outName;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
 
-    setStatus('Conversion réussie, téléchargement lancé.', 'success');
+    setStatus('');
+    showResult(blob, outName);
   } catch (err) {
     setStatus(err.message || 'Échec de la conversion.', 'error');
   } finally {
-    convertBtn.disabled = false;
+    hideProgress();
+    setBusy(false);
   }
 });
 
+downloadBtn.addEventListener('click', () => {
+  if (!resultUrl) return;
+  const a = document.createElement('a');
+  a.href = resultUrl;
+  a.download = resultFileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+});
+
+resetBtn.addEventListener('click', () => {
+  fileInput.value = '';
+  setFile(null);
+});
+
+// Au premier chargement, les <select> ont déjà leurs options par défaut (livrées
+// statiquement dans le HTML) : on ne les repeuple pas ici pour éviter un bug où le
+// picker natif du <select> reste désynchronisé sur mobile avant la première interaction.
 syncUiForCategory();
