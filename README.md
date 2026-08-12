@@ -1,10 +1,12 @@
-# converter
+# Anyform
 
 Convertisseur de formats de fichiers, avec une interface web (drag & drop) déployée sur
-GitHub Pages. Deux autres branches proposent la même logique sous d'autres formes :
-[`cli-converter`](https://github.com/TheDEMON78/converter/pull/2) (ligne de commande) et
+GitHub Pages. Trois autres branches proposent la même logique sous d'autres formes :
+[`cli-converter`](https://github.com/TheDEMON78/converter/pull/2) (ligne de commande),
 [`browser-extension`](https://github.com/TheDEMON78/converter/tree/browser-extension)
-(extension Chrome/Edge).
+(extension Chrome/Edge) et
+[`desktop-app`](https://github.com/TheDEMON78/converter/tree/desktop-app) (application de
+bureau Electron).
 
 ## App web — 100% dans le navigateur
 
