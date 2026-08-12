@@ -13,6 +13,9 @@ on:
       - ".github/workflows/build-desktop.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -42,10 +45,10 @@ jobs:
           # automatique pour que le build ne plante pas sur macOS/Windows.
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Publier les artefacts
+      - name: Publier les artefacts (CI)
         uses: actions/upload-artifact@v4
         with:
-          name: converter-${{ matrix.artifact }}
+          name: anyform-${{ matrix.artifact }}
           path: |
             dist/*.exe
             dist/*.dmg
@@ -53,3 +56,27 @@ jobs:
             dist/*.blockmap
           if-no-files-found: error
           retention-days: 30
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: anyform-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publier/mettre à jour la release "desktop-latest"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-latest
+          name: Anyform (build continu)
+          body: >
+            Build automatique le plus récent de l'app de bureau Anyform à partir de la
+            branche `desktop-app` (commit ${{ github.sha }}). Non signé : Windows
+            SmartScreen et macOS Gatekeeper afficheront un avertissement au premier
+            lancement.
+          prerelease: true
+          make_latest: false
+          files: artifacts/*
