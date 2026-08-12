@@ -23,12 +23,24 @@
 
     <div class="controls">
       <label for="sourceFormat">Format d'entrée :</label>
-      <select id="sourceFormat"></select>
+      <select id="sourceFormat">
+        <option value="svg">SVG</option>
+        <option value="png">PNG</option>
+        <option value="jpg">JPG</option>
+        <option value="webp">WebP</option>
+        <option value="gif">GIF</option>
+        <option value="bmp">BMP</option>
+      </select>
     </div>
 
     <div class="controls">
       <label for="format">Format de sortie :</label>
-      <select id="format"></select>
+      <select id="format">
+        <option value="png">PNG</option>
+        <option value="jpg">JPG</option>
+        <option value="webp">WebP</option>
+        <option value="svg">SVG (vectorisation)</option>
+      </select>
     </div>
 
     <div id="dropzone" class="dropzone">

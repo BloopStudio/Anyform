@@ -80,17 +80,27 @@ function populateSelect(selectEl, options) {
     el.textContent = opt.label;
     selectEl.appendChild(el);
   }
+  selectEl.selectedIndex = 0;
 }
 
 function currentCategory() {
   return categorySelect.value;
 }
 
-function refreshFormatOptions() {
+function updateAcceptedFileType() {
+  fileInput.accept = `.${sourceFormatSelect.value}`;
+}
+
+function onCategoryChange() {
   const category = currentCategory();
   populateSelect(sourceFormatSelect, INPUT_FORMAT_OPTIONS[category]);
   populateSelect(formatSelect, OUTPUT_FORMAT_OPTIONS[category]);
-  fileInput.accept = INPUT_FORMAT_OPTIONS[category].map((opt) => `.${opt.value}`).join(',');
+  syncUiForCategory();
+}
+
+function syncUiForCategory() {
+  const category = currentCategory();
+  updateAcceptedFileType();
   scaleRow.style.display = category === 'image' ? 'flex' : 'none';
   setFile(null);
 }
@@ -138,8 +148,11 @@ function setFile(file) {
   setStatus('');
 }
 
-categorySelect.addEventListener('change', refreshFormatOptions);
-sourceFormatSelect.addEventListener('change', () => setFile(selectedFile));
+categorySelect.addEventListener('change', onCategoryChange);
+sourceFormatSelect.addEventListener('change', () => {
+  updateAcceptedFileType();
+  setFile(selectedFile);
+});
 
 dropzone.addEventListener('click', () => fileInput.click());
 
@@ -217,4 +230,4 @@ convertBtn.addEventListener('click', async () => {
   }
 });
 
-refreshFormatOptions();
+syncUiForCategory();
