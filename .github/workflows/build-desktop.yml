@@ -65,8 +65,15 @@ jobs:
       - name: Injecter le numéro de version dans index.html
         shell: bash
         run: |
-          APP_VERSION=$(node -p "require('./package.json').version")
-          sed -i "s/__APP_VERSION__/${APP_VERSION}/g; s/__BUILD_ID__/${GITHUB_SHA::8}/g" public/index.html
+          node -e "
+            const fs = require('fs');
+            const { version } = require('./package.json');
+            const path = 'public/index.html';
+            let html = fs.readFileSync(path, 'utf8');
+            html = html.replaceAll('__APP_VERSION__', version);
+            html = html.replaceAll('__BUILD_ID__', '${GITHUB_SHA}'.slice(0, 8));
+            fs.writeFileSync(path, html);
+          "
 
       - run: npm ci
 
