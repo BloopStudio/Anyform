@@ -1,11 +1,13 @@
 # Anyform
 
-Développé par **BloopStudio**. Convertisseur de formats de fichiers, avec une interface web
-(drag & drop) déployée sur GitHub Pages. Trois autres branches proposent la même logique
-sous d'autres formes :
-[`cli-converter`](https://github.com/TheDEMON78/converter/pull/2) (ligne de commande),
-[`browser-extension`](https://github.com/TheDEMON78/converter/tree/browser-extension)
-(extension Chrome/Edge) et cette branche `desktop-app` (application de bureau Electron).
+Développé par **BloopStudio**. Cette branche contient l'application de bureau Electron.
+Les autres façons d'utiliser Anyform :
+
+| Branche | Description |
+| --- | --- |
+| [`web-converter`](https://github.com/TheDEMON78/Anyform/tree/web-converter) | App web, déployée sur [thedemon78.github.io/Anyform](https://thedemon78.github.io/Anyform/) |
+| [`cli-converter`](https://github.com/TheDEMON78/Anyform/tree/cli-converter) | Outil en ligne de commande |
+| [`browser-extension`](https://github.com/TheDEMON78/Anyform/tree/browser-extension) | Extension Chrome/Edge |
 
 ## App de bureau (Electron)
 
@@ -45,7 +47,7 @@ commit *avant* que le job `build` ne parte construire les installateurs à parti
 nouvelle HEAD — les `.exe`/`.dmg`/`.AppImage` générés portent donc toujours le numéro de
 version qui vient d'être incrémenté, pas l'ancien.
 
-Chaque build publie une [release GitHub](https://github.com/TheDEMON78/converter/releases)
+Chaque build publie une [release GitHub](https://github.com/TheDEMON78/Anyform/releases)
 taguée avec le numéro de version (`v1.0.7`, `v1.0.8`...), les fichiers portant eux aussi la
 version dans leur nom (`Anyform-1.0.7-win-x64.exe`, etc.), la plus récente étant marquée
 **Latest**. Seules les **10 releases les plus récentes** sont conservées : les plus
@@ -54,17 +56,7 @@ aussi disponibles 30 jours dans les **Artifacts** du run pour du débogage rapid
 ne sont pas signés (pas de certificat) : Windows SmartScreen et macOS Gatekeeper afficheront
 un avertissement au premier lancement.
 
-## App web — 100% dans le navigateur
-
-Aucune installation nécessaire : pas de Node, pas de serveur, pas de dépendances à
-installer côté utilisateur. Toute la conversion se fait en JavaScript directement dans le
-navigateur, tout est vendorisé localement dans `public/vendor/` — aucun appel réseau
-externe, même pour la vidéo/l'audio (ffmpeg.wasm) ou le décodage HEIC.
-
-Il suffit d'ouvrir `public/index.html`, ou de visiter la page déployée sur GitHub Pages,
-de déposer un fichier, choisir le format cible, et cliquer sur "Convertir".
-
-### Formats supportés
+## Formats supportés
 
 - Images : SVG, PNG, JPG, WebP, GIF, BMP, HEIC en entrée ⇄ PNG/JPG/WebP/AVIF/ICO/TIFF/SVG en
   sortie (vectorisation raster → SVG incluse via ImageTracer.js, décodage HEIC via
@@ -74,32 +66,17 @@ de déposer un fichier, choisir le format cible, et cliquer sur "Convertir".
   (moteur ffmpeg.wasm)
 - Données : CSV ⇄ JSON ⇄ XLSX (SheetJS)
 
-D'autres formats (documents, archives...) pourront être ajoutés par la suite.
-
-## Déploiement sur GitHub Pages
-
-Un workflow (`.github/workflows/deploy-pages.yml`) déploie automatiquement le contenu de
-`public/` à chaque push sur `main`, et applique un cache-busting (`?v=<sha>`) sur les
-scripts/styles pour que les navigateurs ne servent jamais une version périmée. Étape
-unique à faire une fois côté dépôt : dans **Settings → Pages**, choisir la source
-**"GitHub Actions"**.
-
-## Développement local
-
-Pas de build nécessaire. Pour tester en local, servir simplement le dossier `public/` :
-
-```bash
-npx serve public
-```
-
 ## Structure
 
 - `main.js` / `preload.js` — process principal Electron (fenêtre, menu natif)
 - `build/icon.png` — icône de l'application
+- `build/license.txt`, `build/installer-*.bmp`, `build/dmg-background.png` — ressources de
+  personnalisation des installateurs (voir plus haut)
 - `public/convert.js` — conversion d'images (Canvas API + ImageTracer.js + heic2any + UTIF.js)
 - `public/data.js` — conversion de données (CSV/JSON/XLSX)
 - `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
 - `public/audio.js` / `public/video.js` — conversion audio/vidéo (ffmpeg.wasm)
-- `public/app.js` — interface (choix du type/format, drag & drop, téléchargement)
+- `public/app.js` — interface (onglets par type, formats, glisser-déposer, progression,
+  téléchargement)
 - `public/vendor/` — librairies vendorisées (ImageTracer.js, SheetJS, heic2any, UTIF.js,
   ffmpeg.wasm)
