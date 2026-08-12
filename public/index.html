@@ -11,6 +11,26 @@
     <h1>Convertisseur de formats</h1>
     <p class="subtitle">Images, données, audio, vidéo — 100% dans le navigateur, rien à installer</p>
 
+    <div class="controls">
+      <label for="category">Type de fichier :</label>
+      <select id="category">
+        <option value="image">Image</option>
+        <option value="data">Données</option>
+        <option value="audio">Audio</option>
+        <option value="video">Vidéo</option>
+      </select>
+    </div>
+
+    <div class="controls">
+      <label for="sourceFormat">Format d'entrée :</label>
+      <select id="sourceFormat"></select>
+    </div>
+
+    <div class="controls">
+      <label for="format">Format de sortie :</label>
+      <select id="format"></select>
+    </div>
+
     <div id="dropzone" class="dropzone">
       <p>Glisse un fichier ici ou clique pour en choisir un</p>
       <input id="fileInput" type="file" hidden />
@@ -27,11 +47,6 @@
         <span class="preview-label">Résultat</span>
         <img id="previewAfter" alt="Aperçu du fichier converti" />
       </div>
-    </div>
-
-    <div class="controls">
-      <label for="format">Convertir vers :</label>
-      <select id="format"></select>
     </div>
 
     <div id="scaleRow" class="controls">
