@@ -38,6 +38,26 @@
       "target": "AppImage",
       "category": "Utility",
       "synopsis": "Convertisseur de formats (images, données, audio, vidéo)"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "license": "build/license.txt",
+      "installerHeader": "build/installer-header.bmp",
+      "installerSidebar": "build/installer-sidebar.bmp",
+      "createDesktopShortcut": true,
+      "shortcutName": "Anyform"
+    },
+    "dmg": {
+      "background": "build/dmg-background.png",
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        { "x": 140, "y": 190, "type": "file" },
+        { "x": 400, "y": 190, "type": "link", "path": "/Applications" }
+      ]
     }
   }
 }

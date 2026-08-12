@@ -24,6 +24,17 @@ Pour construire un exécutable distribuable (`.dmg` sur macOS, `.exe`/NSIS sur W
 npm run dist
 ```
 
+### Installateurs personnalisés
+
+- **Windows (NSIS)** : assistant classique (choix du dossier d'installation) avec licence
+  MIT à accepter, bannière et barre latérale aux couleurs d'Anyform
+  (`build/installer-header.bmp`, `build/installer-sidebar.bmp`, générées depuis
+  `build/license.txt`).
+- **macOS (DMG)** : fenêtre d'installation avec fond personnalisé
+  (`build/dmg-background.png`) illustrant le glisser-déposer vers `/Applications`.
+- **Linux (AppImage)** : pas d'assistant graphique, personnalisation limitée à
+  l'icône/aux métadonnées déjà en place.
+
 ### Builds automatiques (GitHub Actions)
 
 Le workflow `.github/workflows/build-desktop.yml` construit automatiquement les trois
