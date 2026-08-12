@@ -1,22 +1,47 @@
 # converter
 
-Convertisseur de formats de fichiers — commencé par les images (SVG ⇄ PNG/JPG/WebP), avec
-d'autres formats et types de fichiers prévus par la suite (documents, données, audio, vidéo...).
+Convertisseur de formats de fichiers, avec une interface web (drag & drop) déployée sur
+GitHub Pages. Une branche [`cli-converter`](https://github.com/TheDEMON78/converter/pull/2)
+propose la même logique en ligne de commande.
 
-Le projet se développe sur deux branches, chacune avec sa propre pull request :
+## App web — 100% dans le navigateur
 
-- [`web-converter`](https://github.com/TheDEMON78/converter/pull/1) — app web 100% statique
-  (drag & drop), tout tourne dans le navigateur, rien à installer, déployable gratuitement sur
-  GitHub Pages.
-- [`cli-converter`](https://github.com/TheDEMON78/converter/pull/2) — outil en ligne de commande
-  (Node.js), pratique pour scripter des conversions en masse.
+Aucune installation nécessaire : pas de Node, pas de serveur, pas de dépendances à
+installer côté utilisateur. Toute la conversion se fait en JavaScript directement dans le
+navigateur (Canvas API, [ImageTracer.js](https://github.com/jankovicsandras/imagetracerjs)
+vendorisé dans `public/vendor/`, aucun appel réseau externe pour les images).
 
-Les deux partagent la même approche : SVG/PNG/JPG/WebP en entrée, export raster ou vectorisation
-(raster → SVG).
+Il suffit d'ouvrir `public/index.html`, ou de visiter la page déployée sur GitHub Pages,
+de déposer un fichier, choisir le format cible, et cliquer sur "Convertir".
 
-## Prochaines pistes
+### Formats supportés
 
-- ICO, HEIC, AVIF, TIFF en plus des formats déjà supportés
-- Documents : PDF ⇄ images, Markdown ⇄ HTML/PDF
+- Images : SVG ⇄ PNG/JPG/WebP (vectorisation raster → SVG incluse)
 - Données : CSV ⇄ JSON ⇄ XLSX
-- Audio/vidéo : WAV ⇄ MP3, MP4 ⇄ WebM
+- Audio : WAV ⇄ MP3
+
+D'autres formats (documents, vidéo...) pourront être ajoutés par la suite.
+
+## Déploiement sur GitHub Pages
+
+Un workflow (`.github/workflows/deploy-pages.yml`) déploie automatiquement le contenu de
+`public/` à chaque push sur `main`. Étape unique à faire une fois côté dépôt : dans
+**Settings → Pages**, choisir la source **"GitHub Actions"**. Ensuite le site est mis à
+jour automatiquement, et n'importe quel utilisateur peut l'utiliser juste avec un
+navigateur, sans rien installer.
+
+## Développement local
+
+Pas de build nécessaire. Pour tester en local, servir simplement le dossier `public/` :
+
+```bash
+npx serve public
+```
+
+## Structure
+
+- `public/convert.js` — conversion d'images (Canvas API + ImageTracer.js)
+- `public/data.js` — conversion de données (CSV/JSON/XLSX)
+- `public/audio.js` — conversion audio (WAV/MP3)
+- `public/app.js` — interface (drag & drop, téléchargement du résultat)
+- `public/vendor/` — librairies vendorisées (ImageTracer.js, SheetJS, lamejs)
