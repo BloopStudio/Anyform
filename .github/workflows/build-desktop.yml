@@ -100,7 +100,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      # Comme pour le job "build", on repart de la HEAD de la branche (pas du commit qui a
+      # déclenché le run) pour lire le numéro de version tout juste incrémenté par "bump".
       - uses: actions/checkout@v4
+        with:
+          ref: desktop-app
 
       - name: Lire le numéro de version
         id: version
