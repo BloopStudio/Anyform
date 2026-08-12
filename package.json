@@ -1,0 +1,20 @@
+{
+  "name": "converter-web",
+  "version": "1.0.0",
+  "description": "Convertisseur de formats d'images (SVG, PNG, JPG, WebP...) - interface web",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^2.0.0",
+    "sharp": "^0.35.3",
+    "potrace": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
