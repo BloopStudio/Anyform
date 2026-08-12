@@ -1,8 +1,8 @@
 # Anyform — extension navigateur
 
-Extension Chrome/Edge (Manifest V3) qui reprend la logique de l'app web : conversion
-d'images, de données (CSV/JSON/XLSX), d'audio et de vidéo, 100% locale (rien n'est envoyé
-sur internet).
+Développée par **BloopStudio**. Extension Chrome/Edge (Manifest V3) qui reprend la logique
+de l'app web : conversion d'images, de données (CSV/JSON/XLSX), d'audio et de vidéo, 100%
+locale (rien n'est envoyé sur internet).
 
 ## Fonctionnalités
 
