@@ -1,4 +1,4 @@
-# converter
+# Anyform
 
 Convertisseur de formats de fichiers, avec une interface web (drag & drop) déployée sur
 GitHub Pages. Trois autres branches proposent la même logique sous d'autres formes :
