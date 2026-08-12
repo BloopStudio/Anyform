@@ -26,10 +26,19 @@ function detectCategory(filePath) {
   return null;
 }
 
+function normalizeExt(ext) {
+  return ext === 'jpeg' ? 'jpg' : ext;
+}
+
 async function convertOne(filePath, target, options) {
   const category = detectCategory(filePath);
   if (!category) {
     throw new Error(`Type de fichier non reconnu : ${filePath}`);
+  }
+
+  const sourceExt = normalizeExt(path.extname(filePath).slice(1).toLowerCase());
+  if (sourceExt === normalizeExt(target)) {
+    throw new Error(`Le format de sortie (${target}) est identique au format d'entrée.`);
   }
 
   const outDir = options.outDir || path.dirname(filePath);
@@ -48,7 +57,6 @@ async function convertOne(filePath, target, options) {
   } else if (category === 'data') {
     if (!DATA_FORMATS.includes(target)) throw new Error(`Format de données non supporté: ${target}`);
     const inputBuffer = fs.readFileSync(filePath);
-    const sourceExt = path.extname(filePath).slice(1).toLowerCase();
     const result = convertData(inputBuffer, sourceExt, target);
     fs.writeFileSync(outPath, result);
   } else if (category === 'audio') {
