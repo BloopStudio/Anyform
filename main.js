@@ -3,13 +3,15 @@ const path = require('path');
 
 const isMac = process.platform === 'darwin';
 
+app.setName('Anyform');
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 520,
     height: 780,
     minWidth: 420,
     minHeight: 600,
-    title: 'Converter',
+    title: 'Anyform',
     icon: path.join(__dirname, 'build', 'icon.png'),
     autoHideMenuBar: true,
     webPreferences: {

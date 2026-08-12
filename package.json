@@ -1,7 +1,7 @@
 {
-  "name": "converter-desktop",
+  "name": "anyform-desktop",
   "version": "1.0.0",
-  "description": "Convertisseur de formats (images, données, audio, vidéo) - application de bureau",
+  "description": "Anyform - convertisseur de formats (images, données, audio, vidéo) - application de bureau",
   "main": "main.js",
   "author": "TheDEMON78",
   "license": "MIT",
@@ -14,8 +14,8 @@
     "electron-builder": "^26.15.3"
   },
   "build": {
-    "appId": "com.thedemon78.converter",
-    "productName": "Converter",
+    "appId": "com.thedemon78.anyform",
+    "productName": "Anyform",
     "publish": null,
     "directories": {
       "output": "dist"
