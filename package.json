@@ -20,7 +20,7 @@
     "directories": {
       "output": "dist"
     },
-    "artifactName": "${productName}-${os}-${arch}.${ext}",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "files": [
       "main.js",
       "preload.js",

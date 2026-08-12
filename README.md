@@ -34,12 +34,13 @@ commit *avant* que le job `build` ne parte construire les installateurs à parti
 nouvelle HEAD — les `.exe`/`.dmg`/`.AppImage` générés portent donc toujours le numéro de
 version qui vient d'être incrémenté, pas l'ancien.
 
-Les fichiers sont publiés dans la
-[release "desktop-latest"](https://github.com/TheDEMON78/converter/releases/tag/desktop-latest)
-(mise à jour à chaque build, lien stable — pas d'expiration contrairement aux artifacts CI),
-et aussi disponibles 30 jours dans les **Artifacts** du run pour du débogage rapide. Les
-builds ne sont pas signés (pas de certificat) : Windows SmartScreen et macOS Gatekeeper
-afficheront un avertissement au premier lancement.
+Chaque build publie une [release GitHub](https://github.com/TheDEMON78/converter/releases)
+taguée avec le numéro de version (`v1.0.7`, `v1.0.8`...), les fichiers portant eux aussi la
+version dans leur nom (`Anyform-1.0.7-win-x64.exe`, etc.) — l'historique complet des
+versions reste donc accessible, la plus récente étant marquée **Latest**. Les fichiers sont
+aussi disponibles 30 jours dans les **Artifacts** du run pour du débogage rapide. Les builds
+ne sont pas signés (pas de certificat) : Windows SmartScreen et macOS Gatekeeper afficheront
+un avertissement au premier lancement.
 
 ## App web — 100% dans le navigateur
 
