@@ -1,57 +1,39 @@
 # Anyform
 
-Convertisseur de formats de fichiers, avec une interface web (drag & drop) déployée sur
-GitHub Pages. Trois autres branches proposent la même logique sous d'autres formes :
-[`cli-converter`](https://github.com/TheDEMON78/converter/pull/2) (ligne de commande),
-[`browser-extension`](https://github.com/TheDEMON78/converter/tree/browser-extension)
-(extension Chrome/Edge) et
-[`desktop-app`](https://github.com/TheDEMON78/converter/tree/desktop-app) (application de
-bureau Electron).
+Convertisseur de formats de fichiers (images, données, audio, vidéo), 100% côté client —
+aucun fichier n'est jamais envoyé à un serveur. Développé par **BloopStudio**.
 
-## App web — 100% dans le navigateur
+Cette branche `main` sert uniquement de page d'accueil au dépôt : le code vit sur les
+branches ci-dessous, chacune correspondant à une façon d'utiliser Anyform.
 
-Aucune installation nécessaire : pas de Node, pas de serveur, pas de dépendances à
-installer côté utilisateur. Toute la conversion se fait en JavaScript directement dans le
-navigateur, tout est vendorisé localement dans `public/vendor/` — aucun appel réseau
-externe, même pour la vidéo/l'audio (ffmpeg.wasm) ou le décodage HEIC.
+## 🔗 Essayer maintenant
 
-Il suffit d'ouvrir `public/index.html`, ou de visiter la page déployée sur GitHub Pages,
-de déposer un fichier, choisir le format cible, et cliquer sur "Convertir".
+**[thedemon78.github.io/Anyform](https://thedemon78.github.io/Anyform/)** — aucune
+installation, ouvre directement dans le navigateur.
 
-### Formats supportés
+## Branches
 
-- Images : SVG, PNG, JPG, WebP, GIF, BMP, HEIC en entrée ⇄ PNG/JPG/WebP/AVIF/ICO/TIFF/SVG en
-  sortie (vectorisation raster → SVG incluse via ImageTracer.js, décodage HEIC via
-  `heic2any`/libheif WASM)
-- Audio : WAV, MP3, OGG, M4A, FLAC, AAC, WMA, Opus (moteur ffmpeg.wasm)
-- Vidéo : MP4, WebM, MOV, MKV, AVI, FLV, OGV en entrée ⇄ les mêmes + GIF animé en sortie
-  (moteur ffmpeg.wasm)
-- Données : CSV ⇄ JSON ⇄ XLSX (SheetJS)
+| Branche | Description |
+| --- | --- |
+| [`web-converter`](https://github.com/TheDEMON78/Anyform/tree/web-converter) | App web statique déployée sur GitHub Pages (source de la page d'accueil ci-dessus) |
+| [`cli-converter`](https://github.com/TheDEMON78/Anyform/tree/cli-converter) | Outil en ligne de commande (`npx anyform-cli` / `npm i -g`) |
+| [`browser-extension`](https://github.com/TheDEMON78/Anyform/tree/browser-extension) | Extension Chrome/Edge (clic droit sur une image → convertir) |
+| [`desktop-app`](https://github.com/TheDEMON78/Anyform/tree/desktop-app) | App de bureau Electron (Windows/macOS/Linux) |
 
-D'autres formats (documents, archives...) pourront être ajoutés par la suite.
+## Téléchargements
 
-## Déploiement sur GitHub Pages
+- App de bureau (.exe / .dmg / .AppImage) : [release **desktop-latest**](https://github.com/TheDEMON78/Anyform/releases/tag/desktop-latest)
+- Extension navigateur : bientôt sur le Chrome Web Store
 
-Un workflow (`.github/workflows/deploy-pages.yml`) déploie automatiquement le contenu de
-`public/` à chaque push sur `main`, et applique un cache-busting (`?v=<sha>`) sur les
-scripts/styles pour que les navigateurs ne servent jamais une version périmée. Étape
-unique à faire une fois côté dépôt : dans **Settings → Pages**, choisir la source
-**"GitHub Actions"**.
+## Formats supportés
 
-## Développement local
+- **Images** : SVG, PNG, JPG, WebP, GIF, BMP, HEIC en entrée ⇄ PNG/JPG/WebP/AVIF/ICO/TIFF/SVG
+  en sortie (vectorisation raster → SVG, décodage HEIC)
+- **Audio** : WAV, MP3, OGG, M4A, FLAC, AAC, WMA, Opus
+- **Vidéo** : MP4, WebM, MOV, MKV, AVI, FLV, OGV en entrée ⇄ les mêmes + GIF animé en sortie
+- **Données** : CSV ⇄ JSON ⇄ XLSX
 
-Pas de build nécessaire. Pour tester en local, servir simplement le dossier `public/` :
+## Confidentialité
 
-```bash
-npx serve public
-```
-
-## Structure
-
-- `public/convert.js` — conversion d'images (Canvas API + ImageTracer.js + heic2any + UTIF.js)
-- `public/data.js` — conversion de données (CSV/JSON/XLSX)
-- `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
-- `public/audio.js` / `public/video.js` — conversion audio/vidéo (ffmpeg.wasm)
-- `public/app.js` — interface (choix du type/format, drag & drop, téléchargement)
-- `public/vendor/` — librairies vendorisées (ImageTracer.js, SheetJS, heic2any, UTIF.js,
-  ffmpeg.wasm)
+Aucune collecte de données, traitement 100% local. Détails :
+[politique de confidentialité](https://thedemon78.github.io/Anyform/privacy.html).
