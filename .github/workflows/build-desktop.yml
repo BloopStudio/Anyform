@@ -100,31 +100,27 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Lire le numéro de version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
       - uses: actions/download-artifact@v4
         with:
           pattern: anyform-*
           path: artifacts
           merge-multiple: true
 
-      - name: Supprimer les anciens artefacts de la release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release view desktop-latest --repo "${{ github.repository }}" --json assets \
-            --jq '.assets[].name' 2>/dev/null | while read -r asset; do
-            gh release delete-asset desktop-latest "$asset" --repo "${{ github.repository }}" -y
-          done || true
-
-      - name: Publier/mettre à jour la release "desktop-latest"
+      - name: Publier la release v${{ steps.version.outputs.version }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: desktop-latest
-          name: Anyform (build continu)
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Anyform v${{ steps.version.outputs.version }}
           body: >
-            Build automatique le plus récent de l'app de bureau Anyform à partir de la
-            branche `desktop-app` (commit ${{ github.sha }}). Non signé : Windows
-            SmartScreen et macOS Gatekeeper afficheront un avertissement au premier
-            lancement.
-          prerelease: true
-          make_latest: false
+            Build automatique de l'app de bureau Anyform (commit ${{ github.sha }}). Non
+            signé : Windows SmartScreen et macOS Gatekeeper afficheront un avertissement
+            au premier lancement.
+          prerelease: false
+          make_latest: true
           files: artifacts/*
