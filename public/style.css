@@ -82,6 +82,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .status.error { color: #ff6b6b; }
 .status.success { color: #4ade80; }
 
+.footer { margin-top: 24px; font-size: 0.72rem; color: var(--muted); text-align: center; opacity: 0.7; }
+.footer a { color: inherit; text-decoration: underline; }
+
 .preview-row[hidden] {
   display: none;
 }
