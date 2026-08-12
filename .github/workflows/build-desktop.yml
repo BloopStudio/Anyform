@@ -128,3 +128,13 @@ jobs:
           prerelease: false
           make_latest: true
           files: artifacts/*
+
+      - name: Ne garder que les 10 releases les plus récentes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release list --repo "${{ github.repository }}" --limit 100 --json tagName,createdAt \
+            --jq 'sort_by(.createdAt) | reverse | .[10:] | .[].tagName' | while read -r tag; do
+            echo "Suppression de la release obsolète : $tag"
+            gh release delete "$tag" --repo "${{ github.repository }}" -y --cleanup-tag
+          done
