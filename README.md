@@ -1,6 +1,6 @@
 # Anyform
 
-Convertisseur de formats de fichiers, en ligne de commande.
+Convertisseur de formats de fichiers, en ligne de commande. Développé par **BloopStudio**.
 Une branche `web-converter` propose la même logique via une interface web (drag & drop),
 déployée sur GitHub Pages.
 

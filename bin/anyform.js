@@ -72,10 +72,13 @@ async function convertOne(filePath, target, options) {
 
 const ALL_FORMATS = [...new Set([...IMAGE_FORMATS, ...DATA_FORMATS, ...AUDIO_FORMATS, ...VIDEO_FORMATS])];
 
+const { version } = require('../package.json');
+
 const program = new Command();
 
 program
   .name('anyform')
+  .version(version)
   .description(
     'Convertit des fichiers image, données, audio ou vidéo vers un autre format ' +
       '(détection automatique du type selon l\'extension).'

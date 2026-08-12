@@ -4,6 +4,8 @@
   "description": "Anyform - convertisseur de formats (images, données, audio, vidéo) - ligne de commande",
   "main": "lib/convert.js",
   "type": "commonjs",
+  "author": "BloopStudio",
+  "license": "MIT",
   "bin": {
     "anyform": "./bin/anyform.js"
   },
