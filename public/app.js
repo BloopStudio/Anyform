@@ -94,7 +94,9 @@ function setStatus(message, type = '') {
   statusEl.className = `status ${type}`;
 }
 
-function populateSelect(selectEl, options) {
+function populateSelect(selectEl, options, { preserveSelection = false } = {}) {
+  const previousValue = selectEl.value;
+
   selectEl.innerHTML = '';
   for (const opt of options) {
     const el = document.createElement('option');
@@ -102,7 +104,12 @@ function populateSelect(selectEl, options) {
     el.textContent = opt.label;
     selectEl.appendChild(el);
   }
-  selectEl.selectedIndex = 0;
+
+  if (preserveSelection && options.some((opt) => opt.value === previousValue)) {
+    selectEl.value = previousValue;
+  } else {
+    selectEl.selectedIndex = 0;
+  }
 }
 
 function currentCategory() {
@@ -117,7 +124,7 @@ function refreshOutputOptions() {
   const category = currentCategory();
   const sourceExt = sourceFormatSelect.value;
   const options = OUTPUT_FORMAT_OPTIONS[category].filter((opt) => opt.value !== sourceExt);
-  populateSelect(formatSelect, options);
+  populateSelect(formatSelect, options, { preserveSelection: true });
 }
 
 function onCategoryChange() {
