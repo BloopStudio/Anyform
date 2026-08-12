@@ -82,6 +82,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .status.error { color: #ff6b6b; }
 .status.success { color: #4ade80; }
 
+.preview-row[hidden] {
+  display: none;
+}
+
 .preview-row {
   display: flex;
   align-items: center;
