@@ -27,6 +27,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Cache-bust les assets versionnés dans index.html
         run: sed -i "s/__BUILD_ID__/${GITHUB_SHA::8}/g" public/index.html
+      - name: Injecter le numéro de version dans index.html
+        run: sed -i "s/__APP_VERSION__/$(cat VERSION)/g" public/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
