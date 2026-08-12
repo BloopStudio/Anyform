@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Anyform",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Convertit images, données (CSV/JSON/XLSX), audio et vidéo directement dans le navigateur, sans rien envoyer sur internet.",
   "author": "BloopStudio",
   "icons": {
@@ -20,8 +20,14 @@
   "background": {
     "service_worker": "background.js"
   },
-  "permissions": ["contextMenus", "storage", "downloads"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "downloads"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
   }
