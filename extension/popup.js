@@ -1,0 +1,303 @@
+const INPUT_FORMAT_OPTIONS = {
+  image: [
+    { value: 'svg', label: 'SVG' },
+    { value: 'png', label: 'PNG' },
+    { value: 'jpg', label: 'JPG' },
+    { value: 'webp', label: 'WebP' },
+    { value: 'gif', label: 'GIF' },
+    { value: 'bmp', label: 'BMP' },
+    { value: 'heic', label: 'HEIC' },
+  ],
+  data: [
+    { value: 'csv', label: 'CSV' },
+    { value: 'json', label: 'JSON' },
+    { value: 'xlsx', label: 'XLSX' },
+  ],
+  audio: [
+    { value: 'wav', label: 'WAV' },
+    { value: 'mp3', label: 'MP3' },
+    { value: 'ogg', label: 'OGG' },
+    { value: 'm4a', label: 'M4A' },
+    { value: 'flac', label: 'FLAC' },
+    { value: 'aac', label: 'AAC' },
+    { value: 'wma', label: 'WMA' },
+    { value: 'opus', label: 'Opus' },
+  ],
+  video: [
+    { value: 'mp4', label: 'MP4' },
+    { value: 'webm', label: 'WebM' },
+    { value: 'mov', label: 'MOV' },
+    { value: 'mkv', label: 'MKV' },
+    { value: 'avi', label: 'AVI' },
+    { value: 'flv', label: 'FLV' },
+    { value: 'ogv', label: 'OGV' },
+  ],
+};
+
+const OUTPUT_FORMAT_OPTIONS = {
+  image: [
+    { value: 'png', label: 'PNG' },
+    { value: 'jpg', label: 'JPG' },
+    { value: 'webp', label: 'WebP' },
+    { value: 'avif', label: 'AVIF' },
+    { value: 'ico', label: 'ICO' },
+    { value: 'tiff', label: 'TIFF' },
+    { value: 'svg', label: 'SVG (vectorisation)' },
+  ],
+  data: [
+    { value: 'csv', label: 'CSV' },
+    { value: 'json', label: 'JSON' },
+    { value: 'xlsx', label: 'XLSX' },
+  ],
+  audio: [
+    { value: 'wav', label: 'WAV' },
+    { value: 'mp3', label: 'MP3' },
+    { value: 'ogg', label: 'OGG' },
+    { value: 'm4a', label: 'M4A' },
+    { value: 'flac', label: 'FLAC' },
+    { value: 'aac', label: 'AAC' },
+    { value: 'wma', label: 'WMA' },
+    { value: 'opus', label: 'Opus' },
+  ],
+  video: [
+    { value: 'mp4', label: 'MP4' },
+    { value: 'webm', label: 'WebM' },
+    { value: 'mov', label: 'MOV' },
+    { value: 'mkv', label: 'MKV' },
+    { value: 'avi', label: 'AVI' },
+    { value: 'flv', label: 'FLV' },
+    { value: 'ogv', label: 'OGV' },
+    { value: 'gif', label: 'GIF (animé)' },
+  ],
+};
+
+const categorySelect = document.getElementById('category');
+const sourceFormatSelect = document.getElementById('sourceFormat');
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const fileNameEl = document.getElementById('fileName');
+const formatSelect = document.getElementById('format');
+const scaleRow = document.getElementById('scaleRow');
+const scaleSelect = document.getElementById('scale');
+const convertBtn = document.getElementById('convertBtn');
+const statusEl = document.getElementById('status');
+const previewRow = document.getElementById('previewRow');
+const previewBefore = document.getElementById('previewBefore');
+const previewAfter = document.getElementById('previewAfter');
+
+let selectedFile = null;
+let previewBeforeUrl = null;
+let previewAfterUrl = null;
+
+function setStatus(message, type = '') {
+  statusEl.textContent = message;
+  statusEl.className = `status ${type}`;
+}
+
+function populateSelect(selectEl, options, { preserveSelection = false } = {}) {
+  const previousValue = selectEl.value;
+
+  selectEl.innerHTML = '';
+  for (const opt of options) {
+    const el = document.createElement('option');
+    el.value = opt.value;
+    el.textContent = opt.label;
+    selectEl.appendChild(el);
+  }
+
+  if (preserveSelection && options.some((opt) => opt.value === previousValue)) {
+    selectEl.value = previousValue;
+  } else {
+    selectEl.selectedIndex = 0;
+  }
+}
+
+function currentCategory() {
+  return categorySelect.value;
+}
+
+function updateAcceptedFileType() {
+  fileInput.accept = `.${sourceFormatSelect.value}`;
+}
+
+function refreshOutputOptions() {
+  const category = currentCategory();
+  const sourceExt = sourceFormatSelect.value;
+  const options = OUTPUT_FORMAT_OPTIONS[category].filter((opt) => opt.value !== sourceExt);
+  populateSelect(formatSelect, options, { preserveSelection: true });
+}
+
+function onCategoryChange() {
+  const category = currentCategory();
+  populateSelect(sourceFormatSelect, INPUT_FORMAT_OPTIONS[category]);
+  refreshOutputOptions();
+  syncUiForCategory();
+}
+
+function syncUiForCategory() {
+  const category = currentCategory();
+  updateAcceptedFileType();
+  scaleRow.style.display = category === 'image' ? 'flex' : 'none';
+  setFile(null);
+}
+
+function setFile(file) {
+  selectedFile = file;
+  fileNameEl.textContent = file ? file.name : '';
+
+  if (previewBeforeUrl) URL.revokeObjectURL(previewBeforeUrl);
+  if (previewAfterUrl) URL.revokeObjectURL(previewAfterUrl);
+  previewAfterUrl = null;
+  previewAfter.removeAttribute('src');
+
+  if (!file) {
+    previewRow.hidden = true;
+    convertBtn.disabled = true;
+    setStatus('');
+    return;
+  }
+
+  const category = currentCategory();
+  const ext = extensionOf(file);
+  const expectedExt = sourceFormatSelect.value;
+
+  if (ext !== expectedExt) {
+    previewRow.hidden = true;
+    convertBtn.disabled = true;
+    setStatus(
+      `Ce fichier est un .${ext || '?'}, mais le format d'entrée sélectionné est .${expectedExt}. ` +
+        `Choisis le bon format d'entrée ou dépose un fichier .${expectedExt}.`,
+      'error'
+    );
+    return;
+  }
+
+  if (category === 'image') {
+    previewBeforeUrl = URL.createObjectURL(file);
+    previewBefore.src = previewBeforeUrl;
+    previewRow.hidden = false;
+  } else {
+    previewRow.hidden = true;
+  }
+
+  convertBtn.disabled = false;
+  setStatus('');
+}
+
+categorySelect.addEventListener('change', onCategoryChange);
+sourceFormatSelect.addEventListener('change', () => {
+  updateAcceptedFileType();
+  refreshOutputOptions();
+  setFile(selectedFile);
+});
+
+dropzone.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) setFile(fileInput.files[0]);
+});
+
+['dragenter', 'dragover'].forEach((evt) => {
+  dropzone.addEventListener(evt, (e) => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+  });
+});
+
+['dragleave', 'drop'].forEach((evt) => {
+  dropzone.addEventListener(evt, (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+  });
+});
+
+dropzone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer.files[0];
+  if (file) setFile(file);
+});
+
+async function runConversion(file, category, format, scale) {
+  if (category === 'image') return convertFile(file, format, { scale });
+  if (category === 'data') return convertData(file, format);
+  if (category === 'audio') {
+    return convertAudio(file, format, (percent) => setStatus(`Conversion en cours… ${percent}%`));
+  }
+  if (category === 'video') {
+    return convertVideo(file, format, (percent) => setStatus(`Conversion en cours… ${percent}%`));
+  }
+  throw new Error('Type de fichier non supporté.');
+}
+
+convertBtn.addEventListener('click', async () => {
+  if (!selectedFile) return;
+
+  const category = currentCategory();
+  const format = formatSelect.value;
+  const scale = parseInt(scaleSelect.value, 10);
+
+  convertBtn.disabled = true;
+  setStatus(
+    category === 'video' || category === 'audio'
+      ? 'Chargement du moteur audio/vidéo (première fois : ~30 Mo, une seule fois par session)…'
+      : 'Conversion en cours…'
+  );
+
+  try {
+    const blob = await runConversion(selectedFile, category, format, scale);
+
+    if (category === 'image') {
+      if (previewAfterUrl) URL.revokeObjectURL(previewAfterUrl);
+      previewAfterUrl = URL.createObjectURL(blob);
+      previewAfter.src = previewAfterUrl;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
+    a.href = url;
+    a.download = `${baseName}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    setStatus('Conversion réussie, téléchargement lancé.', 'success');
+  } catch (err) {
+    setStatus(err.message || 'Échec de la conversion.', 'error');
+  } finally {
+    convertBtn.disabled = false;
+  }
+});
+
+/**
+ * Si la popup a été ouverte depuis le menu contextuel ("Convertir cette image"), précharge
+ * le fichier déposé par background.js dans chrome.storage.local.
+ */
+async function loadPendingFileFromContextMenu() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('pending') !== '1') return;
+
+  const { pendingFile } = await chrome.storage.local.get('pendingFile');
+  if (!pendingFile) return;
+
+  await chrome.storage.local.remove('pendingFile');
+
+  const res = await fetch(pendingFile.dataUrl);
+  const blob = await res.blob();
+  const file = new File([blob], pendingFile.name, { type: pendingFile.type });
+  const ext = extensionOf(file);
+
+  categorySelect.value = 'image';
+  onCategoryChange();
+
+  if ([...sourceFormatSelect.options].some((opt) => opt.value === ext)) {
+    sourceFormatSelect.value = ext;
+    updateAcceptedFileType();
+    refreshOutputOptions();
+  }
+
+  setFile(file);
+}
+
+syncUiForCategory();
+loadPendingFileFromContextMenu();
