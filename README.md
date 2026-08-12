@@ -28,9 +28,14 @@ npm run dist
 Le workflow `.github/workflows/build-desktop.yml` construit automatiquement les trois
 installateurs (Windows `.exe`, macOS `.dmg`, Linux `.AppImage`) à chaque push sur
 `desktop-app`, ou manuellement via l'onglet **Actions → Construire l'app de bureau → Run
-workflow**. Les fichiers générés sont disponibles en téléchargement dans les **Artifacts**
-du run (30 jours de rétention). Les builds ne sont pas signés (pas de certificat) : Windows
-SmartScreen et macOS Gatekeeper afficheront un avertissement au premier lancement.
+workflow**.
+
+Les fichiers sont publiés dans la
+[release "desktop-latest"](https://github.com/TheDEMON78/converter/releases/tag/desktop-latest)
+(mise à jour à chaque build, lien stable — pas d'expiration contrairement aux artifacts CI),
+et aussi disponibles 30 jours dans les **Artifacts** du run pour du débogage rapide. Les
+builds ne sont pas signés (pas de certificat) : Windows SmartScreen et macOS Gatekeeper
+afficheront un avertissement au premier lancement.
 
 ## App web — 100% dans le navigateur
 
