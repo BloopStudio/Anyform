@@ -6,6 +6,7 @@ const INPUT_FORMAT_OPTIONS = {
     { value: 'webp', label: 'WebP' },
     { value: 'gif', label: 'GIF' },
     { value: 'bmp', label: 'BMP' },
+    { value: 'heic', label: 'HEIC' },
   ],
   data: [
     { value: 'csv', label: 'CSV' },
@@ -32,6 +33,9 @@ const OUTPUT_FORMAT_OPTIONS = {
     { value: 'png', label: 'PNG' },
     { value: 'jpg', label: 'JPG' },
     { value: 'webp', label: 'WebP' },
+    { value: 'avif', label: 'AVIF' },
+    { value: 'ico', label: 'ICO' },
+    { value: 'tiff', label: 'TIFF' },
     { value: 'svg', label: 'SVG (vectorisation)' },
   ],
   data: [
