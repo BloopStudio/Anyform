@@ -1,6 +1,6 @@
 {
   "name": "anyform-desktop",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Anyform - convertisseur de formats (images, données, audio, vidéo) - application de bureau",
   "main": "main.js",
   "author": "BloopStudio",
