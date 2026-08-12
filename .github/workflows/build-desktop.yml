@@ -1,0 +1,55 @@
+name: Construire l'app de bureau
+
+on:
+  push:
+    branches: [desktop-app]
+    paths:
+      - "main.js"
+      - "preload.js"
+      - "public/**"
+      - "build/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/build-desktop.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: windows-exe
+          - os: macos-latest
+            artifact: macos-dmg
+          - os: ubuntu-latest
+            artifact: linux-appimage
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: Construire l'installateur
+        run: npm run dist
+        env:
+          # Pas de certificat de signature disponible : on désactive la recherche
+          # automatique pour que le build ne plante pas sur macOS/Windows.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Publier les artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: converter-${{ matrix.artifact }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.AppImage
+            dist/*.blockmap
+          if-no-files-found: error
+          retention-days: 30
