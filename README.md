@@ -1,7 +1,8 @@
 # Anyform
 
-Convertisseur de formats de fichiers, avec une interface web (drag & drop) déployée sur
-GitHub Pages. Trois autres branches proposent la même logique sous d'autres formes :
+Développé par **BloopStudio**. Convertisseur de formats de fichiers, avec une interface web
+(drag & drop) déployée sur GitHub Pages. Trois autres branches proposent la même logique
+sous d'autres formes :
 [`cli-converter`](https://github.com/TheDEMON78/converter/pull/2) (ligne de commande),
 [`browser-extension`](https://github.com/TheDEMON78/converter/tree/browser-extension)
 (extension Chrome/Edge) et cette branche `desktop-app` (application de bureau Electron).
@@ -28,7 +29,10 @@ npm run dist
 Le workflow `.github/workflows/build-desktop.yml` construit automatiquement les trois
 installateurs (Windows `.exe`, macOS `.dmg`, Linux `.AppImage`) à chaque push sur
 `desktop-app`, ou manuellement via l'onglet **Actions → Construire l'app de bureau → Run
-workflow**.
+workflow**. La première étape (`bump`) incrémente le patch de `package.json` et pousse ce
+commit *avant* que le job `build` ne parte construire les installateurs à partir de cette
+nouvelle HEAD — les `.exe`/`.dmg`/`.AppImage` générés portent donc toujours le numéro de
+version qui vient d'être incrémenté, pas l'ancien.
 
 Les fichiers sont publiés dans la
 [release "desktop-latest"](https://github.com/TheDEMON78/converter/releases/tag/desktop-latest)

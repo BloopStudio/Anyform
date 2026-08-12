@@ -17,7 +17,29 @@ permissions:
   contents: write
 
 jobs:
+  bump:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Incrémenter le patch de package.json
+        run: |
+          NEW_VERSION=$(npm version patch --no-git-tag-version)
+          echo "NEW_VERSION=${NEW_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Commit et push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: bump version to ${NEW_VERSION} [skip ci]"
+          git push
+
   build:
+    needs: bump
     strategy:
       fail-fast: false
       matrix:
@@ -30,11 +52,21 @@ jobs:
             artifact: linux-appimage
     runs-on: ${{ matrix.os }}
     steps:
+      # On repart de la HEAD de la branche (pas du commit qui a déclenché le run) pour
+      # embarquer le numéro de version tout juste incrémenté par le job "bump" ci-dessus.
       - uses: actions/checkout@v4
+        with:
+          ref: desktop-app
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Injecter le numéro de version dans index.html
+        shell: bash
+        run: |
+          APP_VERSION=$(node -p "require('./package.json').version")
+          sed -i "s/__APP_VERSION__/${APP_VERSION}/g; s/__BUILD_ID__/${GITHUB_SHA::8}/g" public/index.html
 
       - run: npm ci
 
