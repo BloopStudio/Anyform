@@ -91,10 +91,17 @@ function updateAcceptedFileType() {
   fileInput.accept = `.${sourceFormatSelect.value}`;
 }
 
+function refreshOutputOptions() {
+  const category = currentCategory();
+  const sourceExt = sourceFormatSelect.value;
+  const options = OUTPUT_FORMAT_OPTIONS[category].filter((opt) => opt.value !== sourceExt);
+  populateSelect(formatSelect, options);
+}
+
 function onCategoryChange() {
   const category = currentCategory();
   populateSelect(sourceFormatSelect, INPUT_FORMAT_OPTIONS[category]);
-  populateSelect(formatSelect, OUTPUT_FORMAT_OPTIONS[category]);
+  refreshOutputOptions();
   syncUiForCategory();
 }
 
@@ -151,6 +158,7 @@ function setFile(file) {
 categorySelect.addEventListener('change', onCategoryChange);
 sourceFormatSelect.addEventListener('change', () => {
   updateAcceptedFileType();
+  refreshOutputOptions();
   setFile(selectedFile);
 });
 
