@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Anyform - convertisseur de formats (images, données, audio, vidéo) - application de bureau",
   "main": "main.js",
-  "author": "TheDEMON78",
+  "author": "BloopStudio",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
@@ -14,7 +14,7 @@
     "electron-builder": "^26.15.3"
   },
   "build": {
-    "appId": "com.thedemon78.anyform",
+    "appId": "com.bloopstudio.anyform",
     "productName": "Anyform",
     "publish": null,
     "directories": {
