@@ -16,11 +16,14 @@ de déposer un fichier, choisir le format cible, et cliquer sur "Convertir".
 
 ### Formats supportés
 
-- Images : SVG ⇄ PNG/JPG/WebP (vectorisation raster → SVG incluse)
+- Images : SVG, PNG, JPG, WebP, GIF, BMP, HEIC en entrée ⇄ PNG/JPG/WebP/AVIF/ICO/TIFF/SVG en
+  sortie (vectorisation raster → SVG incluse, décodage HEIC via `heic2any`/libheif WASM
+  embarqué, hors-ligne)
+- Vidéo : MP4 ⇄ WebM (moteur ffmpeg.wasm chargé à la demande depuis un CDN)
 - Données : CSV ⇄ JSON ⇄ XLSX
 - Audio : WAV ⇄ MP3
 
-D'autres formats (documents, vidéo...) pourront être ajoutés par la suite.
+D'autres formats (documents, archives...) pourront être ajoutés par la suite.
 
 ## Déploiement sur GitHub Pages
 
@@ -44,4 +47,4 @@ npx serve public
 - `public/data.js` — conversion de données (CSV/JSON/XLSX)
 - `public/audio.js` — conversion audio (WAV/MP3)
 - `public/app.js` — interface (drag & drop, téléchargement du résultat)
-- `public/vendor/` — librairies vendorisées (ImageTracer.js, SheetJS, lamejs)
+- `public/vendor/` — librairies vendorisées (ImageTracer.js, SheetJS, lamejs, heic2any, UTIF.js)
