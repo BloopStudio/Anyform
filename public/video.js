@@ -1,46 +1,22 @@
 /**
- * Conversion vidéo (MP4 / WebM), 100% côté navigateur via ffmpeg.wasm.
- * Le moteur (@ffmpeg/ffmpeg + @ffmpeg/util + le core mono-thread, ~31 Mo) est vendorisé
- * dans public/vendor/ffmpeg/ — aucun appel réseau externe, aucune dépendance à un CDN.
- * Le core mono-thread ne nécessite pas les en-têtes COOP/COEP, donc ça fonctionne tel quel
- * sur GitHub Pages.
+ * Conversion vidéo, 100% côté navigateur via ffmpeg.wasm (voir ffmpeg-engine.js).
  */
-
-let ffmpegPromise = null;
-
-async function loadFFmpeg(onProgress) {
-  if (ffmpegPromise) return ffmpegPromise;
-
-  ffmpegPromise = (async () => {
-    const { FFmpeg } = await import('./vendor/ffmpeg/ffmpeg/index.js');
-    const { toBlobURL } = await import('./vendor/ffmpeg/util/index.js');
-
-    const ffmpeg = new FFmpeg();
-
-    if (onProgress) {
-      ffmpeg.on('progress', ({ progress }) => onProgress(Math.round(progress * 100)));
-    }
-
-    await ffmpeg.load({
-      coreURL: await toBlobURL('./vendor/ffmpeg/core/ffmpeg-core.js', 'text/javascript'),
-      wasmURL: await toBlobURL('./vendor/ffmpeg/core/ffmpeg-core.wasm', 'application/wasm'),
-    });
-
-    return ffmpeg;
-  })();
-
-  return ffmpegPromise;
-}
 
 const VIDEO_MIME = {
   mp4: 'video/mp4',
   webm: 'video/webm',
+  mov: 'video/quicktime',
+  avi: 'video/x-msvideo',
+  mkv: 'video/x-matroska',
+  gif: 'image/gif',
+  ogv: 'video/ogg',
+  flv: 'video/x-flv',
 };
 
 /**
- * Convertit un fichier vidéo vers mp4/webm et retourne un Blob.
+ * Convertit un fichier vidéo vers le format cible et retourne un Blob.
  * @param {File} file
- * @param {'mp4'|'webm'} targetFormat
+ * @param {keyof VIDEO_MIME} targetFormat
  * @param {(percent: number) => void} [onProgress]
  */
 async function convertVideo(file, targetFormat, onProgress) {
