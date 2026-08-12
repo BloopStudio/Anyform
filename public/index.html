@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Convertisseur de formats</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="card">
+    <h1>Convertisseur de formats</h1>
+    <p class="subtitle">SVG ⇄ PNG / JPG / WebP / TIFF / GIF / AVIF</p>
+
+    <div id="dropzone" class="dropzone">
+      <p>Glisse un fichier ici ou clique pour en choisir un</p>
+      <input id="fileInput" type="file" accept="image/*,.svg" hidden />
+      <p id="fileName" class="filename"></p>
+    </div>
+
+    <div class="controls">
+      <label for="format">Convertir vers :</label>
+      <select id="format">
+        <option value="png">PNG</option>
+        <option value="jpg">JPG</option>
+        <option value="webp">WebP</option>
+        <option value="tiff">TIFF</option>
+        <option value="gif">GIF</option>
+        <option value="avif">AVIF</option>
+        <option value="svg">SVG (vectorisation)</option>
+      </select>
+      <button id="convertBtn" disabled>Convertir</button>
+    </div>
+
+    <p id="status" class="status"></p>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
