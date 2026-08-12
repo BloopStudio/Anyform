@@ -1,4 +1,4 @@
-# Converter — extension navigateur
+# Anyform — extension navigateur
 
 Extension Chrome/Edge (Manifest V3) qui reprend la logique de l'app web : conversion
 d'images, de données (CSV/JSON/XLSX), d'audio et de vidéo, 100% locale (rien n'est envoyé
@@ -9,7 +9,7 @@ sur internet).
 - **Popup** (icône de la barre d'outils) : même interface que l'app web (choisir le type,
   le format d'entrée, le format de sortie, déposer un fichier).
 - **Menu contextuel** : clic droit sur une image dans une page → "Convertir cette image
-  avec Converter" → l'image s'ouvre dans un nouvel onglet avec le popup pré-rempli, il ne
+  avec Anyform" → l'image s'ouvre dans un nouvel onglet avec le popup pré-rempli, il ne
   reste qu'à choisir le format de sortie.
 
 ## Formats supportés

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Converter — convertisseur de formats",
+  "name": "Anyform",
   "version": "1.0.0",
-  "description": "Convertit images, données (CSV/JSON/XLSX) et audio directement dans le navigateur, sans rien envoyer sur internet.",
+  "description": "Convertit images, données (CSV/JSON/XLSX), audio et vidéo directement dans le navigateur, sans rien envoyer sur internet.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

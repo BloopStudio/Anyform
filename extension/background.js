@@ -3,7 +3,7 @@ const MENU_ID = 'converter-convert-image';
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: MENU_ID,
-    title: 'Convertir cette image avec Converter',
+    title: 'Convertir cette image avec Anyform',
     contexts: ['image'],
   });
 });
@@ -22,7 +22,7 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
     await chrome.storage.local.set({ pendingFile: { dataUrl, name, type: blob.type } });
     chrome.tabs.create({ url: chrome.runtime.getURL('popup.html?pending=1') });
   } catch (err) {
-    console.error('Converter: impossible de récupérer cette image.', err);
+    console.error('Anyform: impossible de récupérer cette image.', err);
   }
 });
 
