@@ -1,15 +1,17 @@
 # converter
 
 Convertisseur de formats de fichiers, avec une interface web (drag & drop) déployée sur
-GitHub Pages. Une branche [`cli-converter`](https://github.com/TheDEMON78/converter/pull/2)
-propose la même logique en ligne de commande.
+GitHub Pages. Deux autres branches proposent la même logique sous d'autres formes :
+[`cli-converter`](https://github.com/TheDEMON78/converter/pull/2) (ligne de commande) et
+[`browser-extension`](https://github.com/TheDEMON78/converter/tree/browser-extension)
+(extension Chrome/Edge).
 
 ## App web — 100% dans le navigateur
 
 Aucune installation nécessaire : pas de Node, pas de serveur, pas de dépendances à
 installer côté utilisateur. Toute la conversion se fait en JavaScript directement dans le
-navigateur (Canvas API, [ImageTracer.js](https://github.com/jankovicsandras/imagetracerjs)
-vendorisé dans `public/vendor/`, aucun appel réseau externe pour les images).
+navigateur, tout est vendorisé localement dans `public/vendor/` — aucun appel réseau
+externe, même pour la vidéo/l'audio (ffmpeg.wasm) ou le décodage HEIC.
 
 Il suffit d'ouvrir `public/index.html`, ou de visiter la page déployée sur GitHub Pages,
 de déposer un fichier, choisir le format cible, et cliquer sur "Convertir".
@@ -17,21 +19,22 @@ de déposer un fichier, choisir le format cible, et cliquer sur "Convertir".
 ### Formats supportés
 
 - Images : SVG, PNG, JPG, WebP, GIF, BMP, HEIC en entrée ⇄ PNG/JPG/WebP/AVIF/ICO/TIFF/SVG en
-  sortie (vectorisation raster → SVG incluse, décodage HEIC via `heic2any`/libheif WASM
-  embarqué, hors-ligne)
-- Vidéo : MP4 ⇄ WebM (moteur ffmpeg.wasm chargé à la demande depuis un CDN)
-- Données : CSV ⇄ JSON ⇄ XLSX
-- Audio : WAV ⇄ MP3
+  sortie (vectorisation raster → SVG incluse via ImageTracer.js, décodage HEIC via
+  `heic2any`/libheif WASM)
+- Audio : WAV, MP3, OGG, M4A, FLAC, AAC, WMA, Opus (moteur ffmpeg.wasm)
+- Vidéo : MP4, WebM, MOV, MKV, AVI, FLV, OGV en entrée ⇄ les mêmes + GIF animé en sortie
+  (moteur ffmpeg.wasm)
+- Données : CSV ⇄ JSON ⇄ XLSX (SheetJS)
 
 D'autres formats (documents, archives...) pourront être ajoutés par la suite.
 
 ## Déploiement sur GitHub Pages
 
 Un workflow (`.github/workflows/deploy-pages.yml`) déploie automatiquement le contenu de
-`public/` à chaque push sur `main`. Étape unique à faire une fois côté dépôt : dans
-**Settings → Pages**, choisir la source **"GitHub Actions"**. Ensuite le site est mis à
-jour automatiquement, et n'importe quel utilisateur peut l'utiliser juste avec un
-navigateur, sans rien installer.
+`public/` à chaque push sur `main`, et applique un cache-busting (`?v=<sha>`) sur les
+scripts/styles pour que les navigateurs ne servent jamais une version périmée. Étape
+unique à faire une fois côté dépôt : dans **Settings → Pages**, choisir la source
+**"GitHub Actions"**.
 
 ## Développement local
 
@@ -43,8 +46,10 @@ npx serve public
 
 ## Structure
 
-- `public/convert.js` — conversion d'images (Canvas API + ImageTracer.js)
+- `public/convert.js` — conversion d'images (Canvas API + ImageTracer.js + heic2any + UTIF.js)
 - `public/data.js` — conversion de données (CSV/JSON/XLSX)
-- `public/audio.js` — conversion audio (WAV/MP3)
-- `public/app.js` — interface (drag & drop, téléchargement du résultat)
-- `public/vendor/` — librairies vendorisées (ImageTracer.js, SheetJS, lamejs, heic2any, UTIF.js)
+- `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
+- `public/audio.js` / `public/video.js` — conversion audio/vidéo (ffmpeg.wasm)
+- `public/app.js` — interface (choix du type/format, drag & drop, téléchargement)
+- `public/vendor/` — librairies vendorisées (ImageTracer.js, SheetJS, heic2any, UTIF.js,
+  ffmpeg.wasm)

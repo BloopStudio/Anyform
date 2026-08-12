@@ -19,12 +19,18 @@ const INPUT_FORMAT_OPTIONS = {
     { value: 'ogg', label: 'OGG' },
     { value: 'm4a', label: 'M4A' },
     { value: 'flac', label: 'FLAC' },
+    { value: 'aac', label: 'AAC' },
+    { value: 'wma', label: 'WMA' },
+    { value: 'opus', label: 'Opus' },
   ],
   video: [
     { value: 'mp4', label: 'MP4' },
     { value: 'webm', label: 'WebM' },
     { value: 'mov', label: 'MOV' },
     { value: 'mkv', label: 'MKV' },
+    { value: 'avi', label: 'AVI' },
+    { value: 'flv', label: 'FLV' },
+    { value: 'ogv', label: 'OGV' },
   ],
 };
 
@@ -46,10 +52,22 @@ const OUTPUT_FORMAT_OPTIONS = {
   audio: [
     { value: 'wav', label: 'WAV' },
     { value: 'mp3', label: 'MP3' },
+    { value: 'ogg', label: 'OGG' },
+    { value: 'm4a', label: 'M4A' },
+    { value: 'flac', label: 'FLAC' },
+    { value: 'aac', label: 'AAC' },
+    { value: 'wma', label: 'WMA' },
+    { value: 'opus', label: 'Opus' },
   ],
   video: [
     { value: 'mp4', label: 'MP4' },
     { value: 'webm', label: 'WebM' },
+    { value: 'mov', label: 'MOV' },
+    { value: 'mkv', label: 'MKV' },
+    { value: 'avi', label: 'AVI' },
+    { value: 'flv', label: 'FLV' },
+    { value: 'ogv', label: 'OGV' },
+    { value: 'gif', label: 'GIF (animé)' },
   ],
 };
 
@@ -194,7 +212,9 @@ dropzone.addEventListener('drop', (e) => {
 async function runConversion(file, category, format, scale) {
   if (category === 'image') return convertFile(file, format, { scale });
   if (category === 'data') return convertData(file, format);
-  if (category === 'audio') return convertAudio(file, format);
+  if (category === 'audio') {
+    return convertAudio(file, format, (percent) => setStatus(`Conversion en cours… ${percent}%`));
+  }
   if (category === 'video') {
     return convertVideo(file, format, (percent) => setStatus(`Conversion en cours… ${percent}%`));
   }
@@ -210,8 +230,8 @@ convertBtn.addEventListener('click', async () => {
 
   convertBtn.disabled = true;
   setStatus(
-    category === 'video'
-      ? 'Chargement du moteur vidéo (première fois : téléchargement ~30 Mo)…'
+    category === 'video' || category === 'audio'
+      ? 'Chargement du moteur audio/vidéo (première fois : ~30 Mo, une seule fois par session)…'
       : 'Conversion en cours…'
   );
 
