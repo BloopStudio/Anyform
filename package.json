@@ -1,0 +1,40 @@
+{
+  "name": "converter-desktop",
+  "version": "1.0.0",
+  "description": "Convertisseur de formats (images, données, audio, vidéo) - application de bureau",
+  "main": "main.js",
+  "author": "TheDEMON78",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.thedemon78.converter",
+    "productName": "Converter",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "public/**/*",
+      "!public/vendor/ffmpeg/**/*.map"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Utility"
+    }
+  }
+}
