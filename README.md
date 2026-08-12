@@ -6,10 +6,10 @@ déployée sur GitHub Pages.
 
 ## Formats supportés
 
-- Images : SVG, PNG, JPG, WebP, TIFF, GIF, AVIF (sharp + potrace pour la vectorisation raster → SVG)
+- Images : SVG, PNG, JPG, WebP, TIFF, GIF, AVIF, ICO (sharp + potrace pour la vectorisation raster → SVG)
 - Données : CSV ⇄ JSON ⇄ XLSX (SheetJS, build patché sans vulnérabilité connue)
-- Audio : WAV, MP3, OGG, FLAC, AAC, M4A
-- Vidéo : MP4, WebM, MOV, AVI, MKV
+- Audio : WAV, MP3, OGG, FLAC, AAC, M4A, WMA, Opus
+- Vidéo : MP4, WebM, MOV, AVI, MKV, FLV, OGV
 
 Audio et vidéo passent par le binaire `ffmpeg` statique fourni par `ffmpeg-static` (installé
 automatiquement avec `npm install`, aucune install système requise).
