@@ -16,13 +16,13 @@ installation, ouvre directement dans le navigateur.
 | Branche | Description |
 | --- | --- |
 | [`web-converter`](https://github.com/TheDEMON78/Anyform/tree/web-converter) | App web statique déployée sur GitHub Pages (source de la page d'accueil ci-dessus) |
-| [`cli-converter`](https://github.com/TheDEMON78/Anyform/tree/cli-converter) | Outil en ligne de commande (`npx anyform-cli` / `npm i -g`) |
+| [`cli-converter`](https://github.com/TheDEMON78/Anyform/tree/cli-converter) | Outil en ligne de commande (non publié sur npm : `git clone` + `npm install` + `npm link`) |
 | [`browser-extension`](https://github.com/TheDEMON78/Anyform/tree/browser-extension) | Extension Chrome/Edge (clic droit sur une image → convertir) |
 | [`desktop-app`](https://github.com/TheDEMON78/Anyform/tree/desktop-app) | App de bureau Electron (Windows/macOS/Linux) |
 
 ## Téléchargements
 
-- App de bureau (.exe / .dmg / .AppImage) : [release **desktop-latest**](https://github.com/TheDEMON78/Anyform/releases/tag/desktop-latest)
+- App de bureau (.exe / .dmg / .AppImage) : [dernière release](https://github.com/TheDEMON78/Anyform/releases/latest)
 - Extension navigateur : bientôt sur le Chrome Web Store
 
 ## Formats supportés
