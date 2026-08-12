@@ -1,26 +1,26 @@
 # converter
 
-Convertisseur de formats de fichiers, avec une interface web (drag & drop).
-Une branche `cli-converter` propose la même logique en ligne de commande.
+Convertisseur de formats de fichiers, avec une interface web (drag & drop) déployée sur
+GitHub Pages. Une branche [`cli-converter`](https://github.com/TheDEMON78/converter/pull/2)
+propose la même logique en ligne de commande.
 
 ## App web — 100% dans le navigateur
 
 Aucune installation nécessaire : pas de Node, pas de serveur, pas de dépendances à
-installer côté utilisateur. Toute la conversion (rasterisation d'un SVG, export
-PNG/JPG/WebP, vectorisation raster → SVG) se fait en JavaScript directement dans le
-navigateur, via `<canvas>` et [ImageTracer.js](https://github.com/jankovicsandras/imagetracerjs)
-(vendorisé dans `public/vendor/`, aucun appel réseau externe).
+installer côté utilisateur. Toute la conversion se fait en JavaScript directement dans le
+navigateur (Canvas API, [ImageTracer.js](https://github.com/jankovicsandras/imagetracerjs)
+vendorisé dans `public/vendor/`, aucun appel réseau externe pour les images).
 
 Il suffit d'ouvrir `public/index.html`, ou de visiter la page déployée sur GitHub Pages,
 de déposer un fichier, choisir le format cible, et cliquer sur "Convertir".
 
-### Formats supportés (v1 — images)
+### Formats supportés
 
-- Entrée : SVG, PNG, JPG, WebP, GIF, BMP (tout ce que le navigateur sait décoder)
-- Sortie : PNG, JPG, WebP, SVG (vectorisation pour les images raster)
+- Images : SVG ⇄ PNG/JPG/WebP (vectorisation raster → SVG incluse)
+- Données : CSV ⇄ JSON ⇄ XLSX
+- Audio : WAV ⇄ MP3
 
-D'autres formats de sortie (TIFF, AVIF, PDF...) et d'autres types de fichiers (documents,
-audio, vidéo...) pourront être ajoutés par la suite.
+D'autres formats (documents, vidéo...) pourront être ajoutés par la suite.
 
 ## Déploiement sur GitHub Pages
 
@@ -40,6 +40,8 @@ npx serve public
 
 ## Structure
 
-- `public/convert.js` — logique de conversion (Canvas API + ImageTracer.js)
+- `public/convert.js` — conversion d'images (Canvas API + ImageTracer.js)
+- `public/data.js` — conversion de données (CSV/JSON/XLSX)
+- `public/audio.js` — conversion audio (WAV/MP3)
 - `public/app.js` — interface (drag & drop, téléchargement du résultat)
-- `public/vendor/imagetracer.js` — lib de vectorisation raster → SVG (domaine public)
+- `public/vendor/` — librairies vendorisées (ImageTracer.js, SheetJS, lamejs)

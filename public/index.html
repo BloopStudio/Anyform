@@ -9,11 +9,11 @@
 <body>
   <main class="card">
     <h1>Convertisseur de formats</h1>
-    <p class="subtitle">SVG ⇄ PNG / JPG / WebP — 100% dans le navigateur, rien à installer</p>
+    <p class="subtitle">Images, données, audio, vidéo — 100% dans le navigateur, rien à installer</p>
 
     <div id="dropzone" class="dropzone">
       <p>Glisse un fichier ici ou clique pour en choisir un</p>
-      <input id="fileInput" type="file" accept="image/*,.svg" hidden />
+      <input id="fileInput" type="file" hidden />
       <p id="fileName" class="filename"></p>
     </div>
 
@@ -31,21 +31,19 @@
 
     <div class="controls">
       <label for="format">Convertir vers :</label>
-      <select id="format">
-        <option value="png">PNG</option>
-        <option value="jpg">JPG</option>
-        <option value="webp">WebP</option>
-        <option value="svg">SVG (vectorisation)</option>
-      </select>
+      <select id="format"></select>
     </div>
 
-    <div class="controls">
+    <div id="scaleRow" class="controls">
       <label for="scale">Échelle (pour SVG en entrée) :</label>
       <select id="scale">
         <option value="1">1x</option>
         <option value="2" selected>2x</option>
         <option value="4">4x</option>
       </select>
+    </div>
+
+    <div class="controls">
       <button id="convertBtn" disabled>Convertir</button>
     </div>
 
@@ -53,7 +51,12 @@
   </main>
 
   <script src="vendor/imagetracer.js"></script>
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="vendor/lame.min.js"></script>
   <script src="convert.js"></script>
+  <script src="data.js"></script>
+  <script src="audio.js"></script>
+  <script src="video.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
