@@ -9,12 +9,24 @@
 <body>
   <main class="card">
     <h1>Convertisseur de formats</h1>
-    <p class="subtitle">SVG ⇄ PNG / JPG / WebP / TIFF / GIF / AVIF</p>
+    <p class="subtitle">SVG ⇄ PNG / JPG / WebP — 100% dans le navigateur, rien à installer</p>
 
     <div id="dropzone" class="dropzone">
       <p>Glisse un fichier ici ou clique pour en choisir un</p>
       <input id="fileInput" type="file" accept="image/*,.svg" hidden />
       <p id="fileName" class="filename"></p>
+    </div>
+
+    <div id="previewRow" class="preview-row" hidden>
+      <div class="preview-box">
+        <span class="preview-label">Original</span>
+        <img id="previewBefore" alt="Aperçu du fichier original" />
+      </div>
+      <div class="preview-arrow">→</div>
+      <div class="preview-box">
+        <span class="preview-label">Résultat</span>
+        <img id="previewAfter" alt="Aperçu du fichier converti" />
+      </div>
     </div>
 
     <div class="controls">
@@ -23,10 +35,16 @@
         <option value="png">PNG</option>
         <option value="jpg">JPG</option>
         <option value="webp">WebP</option>
-        <option value="tiff">TIFF</option>
-        <option value="gif">GIF</option>
-        <option value="avif">AVIF</option>
         <option value="svg">SVG (vectorisation)</option>
+      </select>
+    </div>
+
+    <div class="controls">
+      <label for="scale">Échelle (pour SVG en entrée) :</label>
+      <select id="scale">
+        <option value="1">1x</option>
+        <option value="2" selected>2x</option>
+        <option value="4">4x</option>
       </select>
       <button id="convertBtn" disabled>Convertir</button>
     </div>
@@ -34,6 +52,8 @@
     <p id="status" class="status"></p>
   </main>
 
+  <script src="vendor/imagetracer.js"></script>
+  <script src="convert.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
