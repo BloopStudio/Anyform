@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder"
+    "dist": "electron-builder --publish never"
   },
   "devDependencies": {
     "electron": "^43.4.0",
@@ -16,6 +16,7 @@
   "build": {
     "appId": "com.thedemon78.converter",
     "productName": "Converter",
+    "publish": null,
     "directories": {
       "output": "dist"
     },
@@ -34,7 +35,8 @@
     },
     "linux": {
       "target": "AppImage",
-      "category": "Utility"
+      "category": "Utility",
+      "synopsis": "Convertisseur de formats (images, données, audio, vidéo)"
     }
   }
 }
