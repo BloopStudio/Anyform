@@ -12,7 +12,7 @@ const {
 } = require('../lib/media');
 
 const CATEGORY_EXT = {
-  image: ['svg', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tiff', 'avif', 'ico'],
+  image: ['svg', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tiff', 'avif', 'ico', 'heic', 'heif'],
   data: ['csv', 'json', 'xlsx', 'xls'],
   audio: ['wav', 'mp3', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'opus'],
   video: ['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'ogv'],

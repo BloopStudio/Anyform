@@ -6,7 +6,8 @@ déployée sur GitHub Pages.
 
 ## Formats supportés
 
-- Images : SVG, PNG, JPG, WebP, TIFF, GIF, AVIF, ICO (sharp + potrace pour la vectorisation raster → SVG)
+- Images : SVG, PNG, JPG, WebP, TIFF, GIF, AVIF, ICO, HEIC/HEIF en entrée (sharp + potrace
+  pour la vectorisation raster → SVG, `heic-convert` pour le décodage HEIC/HEIF)
 - Données : CSV ⇄ JSON ⇄ XLSX (SheetJS, build patché sans vulnérabilité connue)
 - Audio : WAV, MP3, OGG, FLAC, AAC, M4A, WMA, Opus
 - Vidéo : MP4, WebM, MOV, AVI, MKV, FLV, OGV
