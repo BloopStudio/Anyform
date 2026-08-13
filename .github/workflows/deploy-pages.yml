@@ -12,6 +12,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  deployments: write
 
 concurrency:
   group: pages
@@ -35,3 +36,13 @@ jobs:
           path: public
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Supprimer les anciens déploiements Pages (garder les 10 derniers)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${{ github.repository }}/deployments?environment=github-pages&per_page=100" \
+            --jq 'sort_by(.created_at) | reverse | .[10:] | .[].id' | while read -r id; do
+            echo "Suppression du déploiement obsolète : $id"
+            gh api --method DELETE "repos/${{ github.repository }}/deployments/$id" || true
+          done
