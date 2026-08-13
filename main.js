@@ -1,9 +1,42 @@
-const { app, BrowserWindow, Menu, shell } = require('electron');
+const { app, BrowserWindow, Menu, shell, dialog } = require('electron');
 const path = require('path');
+const { autoUpdater } = require('electron-updater');
 
 const isMac = process.platform === 'darwin';
 
 app.setName('Anyform');
+
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
+
+// Ne vérifie les mises à jour que sur un build packagé et publié via GitHub Releases —
+// en dev (npm start), il n'y a ni app-update.yml ni release à comparer.
+function checkForUpdates() {
+  if (!app.isPackaged) return;
+
+  autoUpdater.checkForUpdates().catch((err) => {
+    console.error('Vérification de mise à jour échouée :', err);
+  });
+}
+
+autoUpdater.on('update-downloaded', (info) => {
+  dialog
+    .showMessageBox({
+      type: 'info',
+      title: 'Mise à jour disponible',
+      message: `Anyform ${info.version} a été téléchargé.`,
+      detail: "L'application va redémarrer pour terminer l'installation.",
+      buttons: ['Redémarrer maintenant', 'Plus tard'],
+      cancelId: 1,
+    })
+    .then(({ response }) => {
+      if (response === 0) autoUpdater.quitAndInstall();
+    });
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('Erreur de mise à jour automatique :', err);
+});
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -56,6 +89,7 @@ const menuTemplate = [
 app.whenReady().then(() => {
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
   createWindow();
+  checkForUpdates();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

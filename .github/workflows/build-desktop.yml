@@ -93,6 +93,7 @@ jobs:
             dist/*.dmg
             dist/*.AppImage
             dist/*.blockmap
+            dist/latest*.yml
           if-no-files-found: error
           retention-days: 30
 

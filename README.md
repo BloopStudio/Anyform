@@ -56,6 +56,16 @@ aussi disponibles 30 jours dans les **Artifacts** du run pour du débogage rapid
 ne sont pas signés (pas de certificat) : Windows SmartScreen et macOS Gatekeeper afficheront
 un avertissement au premier lancement.
 
+## Mise à jour automatique
+
+L'app vérifie au démarrage (uniquement sur un build packagé, jamais en `npm start`) si une
+nouvelle release GitHub est disponible, via `electron-updater` (`main.js`). Si oui, elle la
+télécharge en arrière-plan puis propose de redémarrer pour l'installer — rien d'automatique
+sans confirmation de l'utilisateur. Ça s'appuie sur les fichiers `latest.yml` /
+`latest-mac.yml` / `latest-linux.yml` générés par electron-builder à chaque build (config
+`build.publish` dans `package.json`) et attachés à chaque release à côté des
+installateurs.
+
 ## Deux modes : Convertisseur et Compresseur
 
 Un onglet en haut de l'interface bascule entre les deux :
@@ -80,7 +90,8 @@ Le thème (clair/sombre) suit automatiquement les préférences de l'appareil.
 
 ## Structure
 
-- `main.js` / `preload.js` — process principal Electron (fenêtre, menu natif)
+- `main.js` / `preload.js` — process principal Electron (fenêtre, menu natif, mise à jour
+  automatique via `electron-updater`)
 - `build/icon.png` — icône de l'application
 - `build/license.txt`, `build/installer-*.bmp`, `build/dmg-background.png` — ressources de
   personnalisation des installateurs (voir plus haut)

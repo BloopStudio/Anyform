@@ -9,6 +9,9 @@
     "start": "electron .",
     "dist": "electron-builder --publish never"
   },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
   "devDependencies": {
     "electron": "^43.4.0",
     "electron-builder": "^26.15.3"
@@ -16,7 +19,11 @@
   "build": {
     "appId": "com.bloopstudio.anyform",
     "productName": "Anyform",
-    "publish": null,
+    "publish": {
+      "provider": "github",
+      "owner": "TheDEMON78",
+      "repo": "Anyform"
+    },
     "directories": {
       "output": "dist"
     },
