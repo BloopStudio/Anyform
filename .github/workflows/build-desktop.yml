@@ -130,12 +130,28 @@ jobs:
           make_latest: true
           files: artifacts/*
 
-      - name: Ne garder que les 10 releases les plus récentes
+      - name: Supprimer les releases antérieures à (version publiée - 10)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release list --repo "${{ github.repository }}" --limit 100 --json tagName,createdAt \
-            --jq 'sort_by(.createdAt) | reverse | .[10:] | .[].tagName' | while read -r tag; do
-            echo "Suppression de la release obsolète : $tag"
-            gh release delete "$tag" --repo "${{ github.repository }}" -y --cleanup-tag
+          VERSION="${{ steps.version.outputs.version }}"
+          PREFIX="${VERSION%.*}"
+          PATCH="${VERSION##*.}"
+          THRESHOLD=$((PATCH - 10))
+
+          if [ "$THRESHOLD" -le 0 ]; then
+            echo "Version ${VERSION} trop basse pour déclencher un nettoyage (seuil ${THRESHOLD} <= 0)."
+            exit 0
+          fi
+
+          echo "Suppression des releases ${PREFIX}.x antérieures à ${PREFIX}.${THRESHOLD}"
+          gh release list --repo "${{ github.repository }}" --limit 100 --json tagName --jq '.[].tagName' \
+            | while read -r tag; do
+            TAG_VERSION="${tag#v}"
+            TAG_PREFIX="${TAG_VERSION%.*}"
+            TAG_PATCH="${TAG_VERSION##*.}"
+            if [ "$TAG_PREFIX" = "$PREFIX" ] && [[ "$TAG_PATCH" =~ ^[0-9]+$ ]] && [ "$TAG_PATCH" -lt "$THRESHOLD" ]; then
+              echo "Suppression de la release obsolète : $tag"
+              gh release delete "$tag" --repo "${{ github.repository }}" -y --cleanup-tag
+            fi
           done
