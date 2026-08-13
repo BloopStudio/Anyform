@@ -25,6 +25,14 @@ installation, ouvre directement dans le navigateur.
 - App de bureau (.exe / .dmg / .AppImage) : [dernière release](https://github.com/TheDEMON78/Anyform/releases/latest)
 - Extension navigateur : bientôt sur le Chrome Web Store
 
+## Convertisseur et Compresseur
+
+Deux modes disponibles (web et app de bureau) :
+
+- **Convertisseur** : change le format (tableau ci-dessous).
+- **Compresseur** : réduit la taille d'une image ou d'une vidéo **sans changer son
+  format**, avec un niveau Léger/Moyen/Fort.
+
 ## Formats supportés
 
 - **Images** : SVG, PNG, JPG, WebP, GIF, BMP, HEIC en entrée ⇄ PNG/JPG/WebP/AVIF/ICO/TIFF/SVG
