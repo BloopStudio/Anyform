@@ -12,7 +12,9 @@ Les autres façons d'utiliser Anyform :
 ## App de bureau (Electron)
 
 Wrapper Electron autour de l'app web : même interface, même code de conversion
-(`public/`), sans rien changer — juste une fenêtre native au lieu du navigateur.
+(`public/`), sans rien changer — juste une fenêtre native au lieu du navigateur. La fenêtre
+s'ouvre à 960×800 par défaut, reste redimensionnable (min. 420×600) et la carte s'adapte en
+continu à sa largeur (`clamp()` CSS, jusqu'à 880px), sans dépendre d'un plein écran.
 
 ```bash
 npm install
@@ -50,9 +52,11 @@ version qui vient d'être incrémenté, pas l'ancien.
 Chaque build publie une [release GitHub](https://github.com/TheDEMON78/Anyform/releases)
 taguée avec le numéro de version (`v1.0.7`, `v1.0.8`...), les fichiers portant eux aussi la
 version dans leur nom (`Anyform-1.0.7-win-x64.exe`, etc.), la plus récente étant marquée
-**Latest**. Seules les **10 releases les plus récentes** sont conservées : les plus
-anciennes sont supprimées automatiquement à la fin de chaque build. Les fichiers sont
-aussi disponibles 30 jours dans les **Artifacts** du run pour du débogage rapide. Les builds
+**Latest**. À la fin de chaque build, toute release dont le patch est inférieur à
+**(version publiée − 10)** est supprimée automatiquement (ex. en publiant 1.0.50, tout ce
+qui est sous 1.0.40 disparaît) — ça revient à toujours garder les 10 dernières, sans dépendre
+d'un décompte fixe. Les fichiers sont aussi disponibles 30 jours dans les **Artifacts** du
+run pour du débogage rapide. Les builds
 ne sont pas signés (pas de certificat) : Windows SmartScreen et macOS Gatekeeper afficheront
 un avertissement au premier lancement.
 
