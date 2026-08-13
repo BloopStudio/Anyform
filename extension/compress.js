@@ -1,10 +1,11 @@
 /**
  * Compression de fichiers : réduit la taille sans changer de format (contrairement à
- * convert.js/audio.js/video.js). Images via re-encodage Canvas, vidéo via ffmpeg.wasm.
+ * convert.js/audio.js/video.js). Images via re-encodage Canvas, audio/vidéo via ffmpeg.wasm.
  */
 
 // GIF et BMP ne sont pas dans cette liste : canvas.toBlob() ne sait pas les encoder dans
-// la plupart des navigateurs (retombe silencieusement sur du PNG, vérifié avec Chromium).
+// la plupart des navigateurs (retombe silencieusement sur du PNG, vérifié avec Chromium) —
+// pas la peine de proposer un format de compression qui échouera systématiquement.
 const COMPRESSIBLE_IMAGE_MIME = {
   png: 'image/png',
   jpg: 'image/jpeg',
@@ -29,7 +30,7 @@ async function compressImage(file, level = 'medium') {
   const mime = COMPRESSIBLE_IMAGE_MIME[ext];
 
   if (!mime) {
-    throw new Error(`Format non compressible : .${ext || '?'}. Formats supportés : PNG, JPG, WebP, GIF, BMP, HEIC.`);
+    throw new Error(`Format non compressible : .${ext || '?'}. Formats supportés : PNG, JPG, WebP, HEIC.`);
   }
 
   const dataUrl = await readFileAsDataUrl(sourceBlob);
@@ -109,4 +110,52 @@ async function compressVideo(file, level, onProgress) {
   await ffmpeg.deleteFile(outName);
 
   return new Blob([data.buffer], { type: VIDEO_MIME[ext] || 'application/octet-stream' });
+}
+
+const AUDIO_BITRATE_BY_LEVEL = { light: 192, medium: 128, strong: 96 };
+const FLAC_COMPRESSION_BY_LEVEL = { light: 5, medium: 8, strong: 12 };
+const WAV_SAMPLE_RATE_BY_LEVEL = { light: 44100, medium: 32000, strong: 22050 };
+
+// FLAC est sans perte : pas de curseur de bitrate, seulement un compromis
+// taille/vitesse d'encodage (-compression_level), à qualité inchangée. WAV est du PCM brut
+// sans aucune notion de compression : on réduit la fréquence d'échantillonnage à la place,
+// comme le redimensionnement pour les images sans curseur de qualité.
+const AUDIO_COMPRESS_ARGS = {
+  mp3: (level) => ['-c:a', 'libmp3lame', '-b:a', `${AUDIO_BITRATE_BY_LEVEL[level]}k`],
+  ogg: (level) => ['-c:a', 'libvorbis', '-b:a', `${AUDIO_BITRATE_BY_LEVEL[level]}k`],
+  m4a: (level) => ['-c:a', 'aac', '-b:a', `${AUDIO_BITRATE_BY_LEVEL[level]}k`],
+  aac: (level) => ['-c:a', 'aac', '-b:a', `${AUDIO_BITRATE_BY_LEVEL[level]}k`],
+  opus: (level) => ['-c:a', 'libopus', '-b:a', `${AUDIO_BITRATE_BY_LEVEL[level]}k`],
+  wma: (level) => ['-c:a', 'wmav2', '-b:a', `${AUDIO_BITRATE_BY_LEVEL[level]}k`],
+  flac: (level) => ['-c:a', 'flac', '-compression_level', String(FLAC_COMPRESSION_BY_LEVEL[level])],
+  wav: (level) => ['-ar', String(WAV_SAMPLE_RATE_BY_LEVEL[level])],
+};
+
+/**
+ * Compresse un fichier audio en conservant son format d'origine.
+ * @param {File} file
+ * @param {'light'|'medium'|'strong'} level
+ * @param {(percent: number) => void} [onProgress]
+ */
+async function compressAudio(file, level, onProgress) {
+  const ext = extensionOf(file) || 'mp3';
+  const buildArgs = AUDIO_COMPRESS_ARGS[ext];
+
+  if (!buildArgs) {
+    throw new Error(`Format audio non compressible : .${ext}.`);
+  }
+
+  const ffmpeg = await loadFFmpeg(onProgress);
+
+  const inName = `input.${ext}`;
+  const outName = `output.${ext}`;
+
+  await ffmpeg.writeFile(inName, new Uint8Array(await file.arrayBuffer()));
+  await ffmpeg.exec(['-i', inName, ...buildArgs(level), outName]);
+  const data = await ffmpeg.readFile(outName);
+
+  await ffmpeg.deleteFile(inName);
+  await ffmpeg.deleteFile(outName);
+
+  return new Blob([data.buffer], { type: AUDIO_MIME[ext] || 'application/octet-stream' });
 }
