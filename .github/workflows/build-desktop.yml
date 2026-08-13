@@ -16,6 +16,14 @@ on:
 permissions:
   contents: write
 
+# Empêche deux runs de tourner en même temps : sans ça, deux releases publiées à quelques
+# secondes d'intervalle peuvent chacune calculer leurs notes de version par rapport à la même
+# "dernière release" (celle de l'autre n'existe pas encore à ce moment-là), et donc lister les
+# mêmes commits en double. Mis en file d'attente plutôt qu'annulé (pas de cancel-in-progress)
+# pour ne pas interrompre un build/publication déjà lancé.
+concurrency:
+  group: build-desktop
+
 jobs:
   bump:
     if: github.actor != 'github-actions[bot]'
@@ -103,12 +111,13 @@ jobs:
     steps:
       # Comme pour le job "build", on repart de la HEAD de la branche (pas du commit qui a
       # déclenché le run) pour lire le numéro de version tout juste incrémenté par "bump".
-      # fetch-depth: 0 (historique complet + tags) est nécessaire pour que "git log
-      # <tag précédent>..HEAD" puisse générer les notes de version ci-dessous.
+      # fetch-depth: 0 + fetch-tags (historique complet + tags) est nécessaire pour que
+      # "git log <tag précédent>..HEAD" puisse générer les notes de version ci-dessous.
       - uses: actions/checkout@v4
         with:
           ref: desktop-app
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Lire le numéro de version
         id: version
@@ -121,10 +130,14 @@ jobs:
           merge-multiple: true
 
       - name: Générer les notes de version depuis la dernière release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PREV_TAG=$(gh release list --repo "${{ github.repository }}" --limit 1 --json tagName --jq '.[0].tagName' || true)
+          # Le tag précédent vient de l'ascendance git de HEAD (pas de "gh release list", ni
+          # d'un tri par date de tag) : "git describe" remonte l'historique des commits pour
+          # trouver le tag le plus proche, ce qui reste fiable même quand deux tags sont créés
+          # à la même seconde (les tags légers n'ont pas de date propre : un tri par date
+          # retombe sur la date du commit visé, ex-aequo en CI rapide, et peut piocher le
+          # mauvais tag — vu en pratique, ça faisait ressortir des commits déjà publiés).
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
           MAX_ENTRIES=25
 
           {
