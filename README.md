@@ -66,9 +66,9 @@ sans confirmation de l'utilisateur. Ça s'appuie sur les fichiers `latest.yml` /
 `build.publish` dans `package.json`) et attachés à chaque release à côté des
 installateurs.
 
-## Deux modes : Convertisseur et Compresseur
+## Quatre modes
 
-Un onglet en haut de l'interface bascule entre les deux :
+Un onglet en haut de l'interface bascule entre eux :
 
 - **Convertisseur** : change le format d'un fichier (formats ci-dessous).
 - **Compresseur** : réduit la taille d'un fichier **sans changer son format**. Limité aux
@@ -76,6 +76,13 @@ Un onglet en haut de l'interface bascule entre les deux :
   réduit, `-compression_level` pour FLAC sans perte, fréquence d'échantillonnage réduite
   pour WAV) et aux vidéos (CRF réduit sur le même codec/conteneur, audio inchangé), avec un
   niveau Léger/Moyen/Fort. Voir `public/compress.js`.
+- **Inspecteur** : lit les propriétés d'un fichier (dimensions, durée, lignes/colonnes,
+  nombre de sous-titres...) sans le modifier. Catégorie déduite de l'extension déposée, pas
+  d'onglet Type de fichier à pré-choisir. Voir `public/inspect.js`.
+- **Comparateur** : seul mode à deux entrées (fichier A / fichier B). Images → diff pixel
+  par pixel téléchargeable. Données/sous-titres → diff ligne à ligne (LCS), repli sur
+  empreinte SHA-256 au-delà de 3000 lignes. Reste (audio/vidéo/xlsx) → empreinte SHA-256
+  uniquement. Voir `public/compare.js`.
 
 Le thème (clair/sombre) suit automatiquement les préférences de l'appareil. Les 5 derniers
 fichiers convertis/compressés restent accessibles (re-téléchargeables) dans un historique
@@ -106,6 +113,8 @@ local sous le résultat (`public/history.js`, IndexedDB). Si la fenêtre est en 
 - `public/data.js` — conversion de données (CSV/JSON/XLSX)
 - `public/subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
 - `public/history.js` — historique local des 5 derniers fichiers (IndexedDB)
+- `public/inspect.js` — lecture des propriétés d'un fichier, sans le modifier
+- `public/compare.js` — diff entre deux fichiers (image, texte ligne à ligne, ou empreinte)
 - `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
 - `public/audio.js` / `public/video.js` — conversion audio/vidéo (ffmpeg.wasm)
 - `public/app.js` — interface (mode, onglets par type, formats, glisser-déposer,
