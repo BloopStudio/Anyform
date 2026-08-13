@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   bump:
@@ -28,3 +29,14 @@ jobs:
           git add package.json
           git commit -m "chore: bump version to ${NEW_VERSION} [skip ci]"
           git push
+
+      - name: Supprimer les anciens runs du workflow (garder les 10 derniers)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run list --repo "${{ github.repository }}" --workflow "bump-version.yml" \
+            --json databaseId,createdAt --limit 100 \
+            --jq 'sort_by(.createdAt) | reverse | .[10:] | .[].databaseId' | while read -r id; do
+            echo "Suppression du run obsolète : $id"
+            gh run delete "$id" --repo "${{ github.repository }}" || true
+          done
