@@ -72,11 +72,15 @@ Un onglet en haut de l'interface bascule entre les deux :
 
 - **Convertisseur** : change le format d'un fichier (formats ci-dessous).
 - **Compresseur** : réduit la taille d'un fichier **sans changer son format**. Limité aux
-  images (qualité réduite pour JPG/WebP, redimensionnement pour PNG) et aux
-  vidéos (CRF réduit sur le même codec/conteneur, audio inchangé), avec un niveau
-  Léger/Moyen/Fort. Voir `public/compress.js`.
+  images (qualité réduite pour JPG/WebP, redimensionnement pour PNG), à l'audio (bitrate
+  réduit, `-compression_level` pour FLAC sans perte, fréquence d'échantillonnage réduite
+  pour WAV) et aux vidéos (CRF réduit sur le même codec/conteneur, audio inchangé), avec un
+  niveau Léger/Moyen/Fort. Voir `public/compress.js`.
 
-Le thème (clair/sombre) suit automatiquement les préférences de l'appareil.
+Le thème (clair/sombre) suit automatiquement les préférences de l'appareil. Les 5 derniers
+fichiers convertis/compressés restent accessibles (re-téléchargeables) dans un historique
+local sous le résultat (`public/history.js`, IndexedDB). Si la fenêtre est en arrière-plan
+à la fin d'une conversion audio/vidéo, une notification native prévient.
 
 ## Formats supportés (Convertisseur)
 
@@ -87,6 +91,8 @@ Le thème (clair/sombre) suit automatiquement les préférences de l'appareil.
 - Vidéo : MP4, WebM, MOV, MKV, AVI, FLV, OGV en entrée ⇄ les mêmes + GIF animé en sortie
   (moteur ffmpeg.wasm)
 - Données : CSV ⇄ JSON ⇄ XLSX (SheetJS)
+- Sous-titres : SRT ⇄ VTT ⇄ ASS (texte pur, aucune dépendance ; le style ASS — police,
+  couleur, position — n'est pas préservé, non représentable en SRT/VTT)
 
 ## Structure
 
@@ -96,11 +102,13 @@ Le thème (clair/sombre) suit automatiquement les préférences de l'appareil.
 - `build/license.txt`, `build/installer-*.bmp`, `build/dmg-background.png` — ressources de
   personnalisation des installateurs (voir plus haut)
 - `public/convert.js` — conversion d'images (Canvas API + ImageTracer.js + heic2any + UTIF.js)
-- `public/compress.js` — compression d'images/vidéos (même format en sortie)
+- `public/compress.js` — compression d'images/audio/vidéos (même format en sortie)
 - `public/data.js` — conversion de données (CSV/JSON/XLSX)
+- `public/subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
+- `public/history.js` — historique local des 5 derniers fichiers (IndexedDB)
 - `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
 - `public/audio.js` / `public/video.js` — conversion audio/vidéo (ffmpeg.wasm)
 - `public/app.js` — interface (mode, onglets par type, formats, glisser-déposer,
-  progression, téléchargement)
+  progression, téléchargement, notifications, historique)
 - `public/vendor/` — librairies vendorisées (ImageTracer.js, SheetJS, heic2any, UTIF.js,
   ffmpeg.wasm)
