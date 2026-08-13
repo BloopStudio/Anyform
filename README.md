@@ -36,6 +36,29 @@ Le fichier compressé est écrit à côté avec le suffixe `-compresse` (le form
 change jamais, sauf HEIC/HEIF → PNG). Les sous-titres n'ont pas de notion de "compression
 sans changer de format" — non proposé pour cette catégorie.
 
+## Inspecteur et Comparateur
+
+Deux sous-commandes séparées (pas des options de la commande principale, car leur forme ne
+rentre pas dans le modèle "un ou plusieurs fichiers → un format cible") :
+
+```bash
+anyform info photo.jpg
+anyform info musique.wav --json
+anyform diff avant.png apres.png
+anyform diff a.csv b.csv --out diff.txt
+```
+
+- **`info <file>`** : affiche les propriétés d'un fichier (dimensions, durée, débit estimé,
+  nombre de lignes/colonnes, nombre de sous-titres...) sans le modifier. `--json` pour une
+  sortie machine-readable plutôt que du texte aligné. La durée/résolution audio/vidéo vient
+  de `ffmpeg -i` (parsing de la sortie standard, comme `ffprobe`), pas d'un ffprobe séparé.
+- **`diff <fileA> <fileB>`** : compare deux fichiers du même type. Images → diff pixel par
+  pixel (PNG écrit sur disque, zones qui changent en rouge — `--out <path>` pour choisir où,
+  par défaut `<fileA>-diff.png`). Données/sous-titres → diff ligne à ligne façon `git diff`
+  (algorithme LCS), affichée sur stdout ou écrite dans `--out` si fourni ; au-delà de 3000
+  lignes, repli automatique sur une comparaison d'empreinte SHA-256 (le coût de la diff
+  deviendrait trop élevé). Reste (audio/vidéo/xlsx) : empreinte SHA-256 uniquement.
+
 ## Installation
 
 ```bash
@@ -79,4 +102,7 @@ Il faut préciser exactement l'une des deux options `-t` ou `-c`.
 - `lib/data.js` — conversion de données (SheetJS)
 - `lib/media.js` — conversion et compression audio/vidéo (ffmpeg-static)
 - `lib/subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
-- `bin/anyform.js` — interface en ligne de commande (détection de type, routage)
+- `lib/inspect.js` — lecture des propriétés d'un fichier, sans le modifier
+- `lib/compare.js` — diff entre deux fichiers (image, texte ligne à ligne, ou empreinte)
+- `bin/anyform.js` — interface en ligne de commande (détection de type, routage,
+  sous-commandes `info`/`diff`)

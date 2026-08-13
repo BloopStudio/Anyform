@@ -18,6 +18,8 @@ const {
   SUPPORTED_VIDEO_FORMATS: VIDEO_FORMATS,
 } = require('../lib/media');
 const { convertSubtitle, SUBTITLE_FORMATS } = require('../lib/subtitles');
+const { inspectFile } = require('../lib/inspect');
+const { compareFiles } = require('../lib/compare');
 
 const CATEGORY_EXT = {
   image: ['svg', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tiff', 'avif', 'ico', 'heic', 'heif'],
@@ -179,6 +181,101 @@ program
     }
 
     if (hadError) process.exitCode = 1;
+  });
+
+// Sous-commandes séparées plutôt que des options de la commande racine : "info" n'a pas de
+// format de sortie et "diff" a besoin d'exactement deux fichiers, ce qui ne rentre pas dans
+// le modèle "un ou plusieurs fichiers -> un format cible" de convertOne/compressOne.
+program
+  .command('info <file>')
+  .description('affiche les propriétés d\'un fichier (dimensions, durée, lignes/colonnes...) sans le modifier')
+  .option('--json', 'affiche le résultat au format JSON plutôt qu\'en texte lisible')
+  .action(async (filePath, options) => {
+    const category = detectCategory(filePath);
+    if (!category) {
+      console.error(`Erreur : type de fichier non reconnu : ${filePath}`);
+      process.exitCode = 1;
+      return;
+    }
+
+    try {
+      const sourceExt = normalizeExt(path.extname(filePath).slice(1).toLowerCase());
+      const items = await inspectFile(filePath, category, sourceExt);
+
+      if (options.json) {
+        console.log(JSON.stringify(Object.fromEntries(items.map((i) => [i.label, i.value])), null, 2));
+      } else {
+        const width = Math.max(...items.map((i) => i.label.length));
+        for (const item of items) console.log(`${item.label.padEnd(width)}  ${item.value}`);
+      }
+    } catch (err) {
+      console.error(`Erreur : ${err.message}`);
+      process.exitCode = 1;
+    }
+  });
+
+program
+  .command('diff <fileA> <fileB>')
+  .description('compare deux fichiers du même type (image : diff visuelle, données/sous-titres : diff ligne à ligne, reste : empreinte SHA-256)')
+  // Pas de forme courte -o : la commande racine utilise déjà -o pour --out-dir, et
+  // Commander résout les options courtes au niveau du programme entier, pas par
+  // sous-commande — un -o ici serait silencieusement absorbé par --out-dir.
+  .option('--out <path>', 'fichier de sortie pour la diff (image : PNG ; texte : diff au format +/-). Par défaut : à côté de fileA')
+  .action(async (pathA, pathB, options) => {
+    const categoryA = detectCategory(pathA);
+    const categoryB = detectCategory(pathB);
+
+    if (!categoryA || !categoryB) {
+      console.error('Erreur : un des deux fichiers a un type non reconnu par Anyform.');
+      process.exitCode = 1;
+      return;
+    }
+    if (categoryA !== categoryB) {
+      console.error('Erreur : les deux fichiers doivent être du même type pour être comparés.');
+      process.exitCode = 1;
+      return;
+    }
+
+    try {
+      const result = await compareFiles(pathA, pathB, categoryA);
+      const baseName = path.parse(pathA).name;
+
+      if (result.type === 'image') {
+        console.log(
+          result.identical ? 'Images identiques.' : `${result.percentIdentical}% des pixels identiques (zone commune).`
+        );
+        if (result.sizeMismatch) {
+          console.log(`Dimensions différentes : A = ${result.dimensionsA}, B = ${result.dimensionsB} — comparaison faite sur leur zone commune.`);
+        }
+        const outPath = options.out || path.join(path.dirname(pathA), `${baseName}-diff.png`);
+        fs.writeFileSync(outPath, result.diffBuffer);
+        console.log(`Diff écrite dans ${outPath}`);
+      } else if (result.type === 'text') {
+        console.log(
+          result.identical ? 'Fichiers identiques.' : `${result.added} ligne(s) ajoutée(s), ${result.removed} ligne(s) supprimée(s).`
+        );
+        const diffText = result.diff
+          .filter((line) => line.type !== 'equal')
+          .map((line) => `${line.type === 'added' ? '+' : '-'} ${line.text}`)
+          .join('\n');
+        if (options.out) {
+          fs.writeFileSync(options.out, diffText + '\n');
+          console.log(`Diff écrite dans ${options.out}`);
+        } else if (diffText) {
+          console.log(diffText);
+        }
+      } else {
+        console.log(result.identical ? 'Fichiers identiques (même empreinte SHA-256).' : 'Fichiers différents.');
+        if (result.tooLarge) {
+          console.log('Fichier trop volumineux pour une diff ligne à ligne détaillée — comparaison par empreinte seulement.');
+        }
+        console.log(`A : ${result.sizeA} octets — SHA-256 ${result.hashA}`);
+        console.log(`B : ${result.sizeB} octets — SHA-256 ${result.hashB}`);
+      }
+    } catch (err) {
+      console.error(`Erreur : ${err.message}`);
+      process.exitCode = 1;
+    }
   });
 
 program.parseAsync(process.argv);
