@@ -3,17 +3,18 @@
  * convert.js/audio.js/video.js). Images via re-encodage Canvas, vidéo via ffmpeg.wasm.
  */
 
+// GIF et BMP ne sont pas dans cette liste : canvas.toBlob() ne sait pas les encoder dans
+// la plupart des navigateurs (retombe silencieusement sur du PNG, vérifié avec Chromium) —
+// pas la peine de proposer un format de compression qui échouera systématiquement.
 const COMPRESSIBLE_IMAGE_MIME = {
   png: 'image/png',
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   webp: 'image/webp',
-  gif: 'image/gif',
-  bmp: 'image/bmp',
 };
 
-// JPG/WebP ont un curseur de qualité ; PNG/GIF/BMP n'en ont pas, donc on réduit la
-// résolution à la place pour alléger le fichier.
+// JPG/WebP ont un curseur de qualité ; PNG n'en a pas, donc on réduit la résolution à la
+// place pour alléger le fichier.
 const IMAGE_QUALITY_BY_LEVEL = { light: 0.82, medium: 0.6, strong: 0.4 };
 const IMAGE_SCALE_BY_LEVEL = { light: 1, medium: 0.85, strong: 0.65 };
 
