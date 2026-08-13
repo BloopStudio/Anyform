@@ -11,26 +11,30 @@ déployée sur GitHub Pages.
 - Données : CSV ⇄ JSON ⇄ XLSX (SheetJS, build patché sans vulnérabilité connue)
 - Audio : WAV, MP3, OGG, FLAC, AAC, M4A, WMA, Opus
 - Vidéo : MP4, WebM, MOV, AVI, MKV, FLV, OGV
+- Sous-titres : SRT ⇄ VTT ⇄ ASS (texte pur, aucune dépendance)
 
 Audio et vidéo passent par le binaire `ffmpeg` statique fourni par `ffmpeg-static` (installé
 automatiquement avec `npm install`, aucune install système requise).
 
-Le type de fichier (image/données/audio/vidéo) est détecté automatiquement à partir de
-l'extension.
+Le type de fichier (image/données/audio/vidéo/sous-titres) est détecté automatiquement à
+partir de l'extension.
 
 ## Convertisseur et Compresseur
 
 En plus de la conversion (`-t/--to`), le CLI propose une compression sans changement de
-format (`-c/--compress`) pour réduire la taille des images et des vidéos :
+format (`-c/--compress`) pour réduire la taille des images, de l'audio et des vidéos :
 
 - Images compressibles : PNG, JPG, WebP, GIF (via `sharp`) — le HEIC/HEIF est décodé puis
   compressé en PNG, comme sur les autres plateformes
+- Audio compressible : MP3, OGG, M4A, AAC, Opus, WMA (bitrate réduit), FLAC
+  (`-compression_level`, sans perte), WAV (fréquence d'échantillonnage réduite, PCM brut)
 - Vidéos compressibles : MP4, WebM, MOV, MKV, AVI, FLV, OGV (via `ffmpeg`, codec/conteneur
   d'origine conservé, audio non retouché)
 - Trois niveaux : `light`, `medium` (par défaut), `strong`
 
 Le fichier compressé est écrit à côté avec le suffixe `-compresse` (le format de sortie ne
-change jamais, sauf HEIC/HEIF → PNG).
+change jamais, sauf HEIC/HEIF → PNG). Les sous-titres n'ont pas de notion de "compression
+sans changer de format" — non proposé pour cette catégorie.
 
 ## Installation
 
@@ -73,5 +77,6 @@ Il faut préciser exactement l'une des deux options `-t` ou `-c`.
 
 - `lib/convert.js` — conversion d'images (sharp + potrace)
 - `lib/data.js` — conversion de données (SheetJS)
-- `lib/media.js` — conversion audio/vidéo (ffmpeg-static)
+- `lib/media.js` — conversion et compression audio/vidéo (ffmpeg-static)
+- `lib/subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
 - `bin/anyform.js` — interface en ligne de commande (détection de type, routage)

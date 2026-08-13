@@ -13,17 +13,23 @@ const { convertData, SUPPORTED_DATA_FORMATS: DATA_FORMATS } = require('../lib/da
 const {
   convertMedia,
   compressVideo,
+  compressAudio,
   SUPPORTED_AUDIO_FORMATS: AUDIO_FORMATS,
   SUPPORTED_VIDEO_FORMATS: VIDEO_FORMATS,
 } = require('../lib/media');
+const { convertSubtitle, SUBTITLE_FORMATS } = require('../lib/subtitles');
 
 const CATEGORY_EXT = {
   image: ['svg', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tiff', 'avif', 'ico', 'heic', 'heif'],
   data: ['csv', 'json', 'xlsx', 'xls'],
   audio: ['wav', 'mp3', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'opus'],
   video: ['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'ogv'],
+  subtitle: ['srt', 'vtt', 'ass', 'ssa'],
 };
 
+// Détecte la catégorie (image/données/audio/vidéo/sous-titres) à partir de l'extension du
+// fichier — aucune lecture du contenu, purement basé sur le nom (comme sur le web/desktop/
+// extension, pour un comportement cohérent partout).
 function detectCategory(filePath) {
   const ext = path.extname(filePath).slice(1).toLowerCase();
   for (const [category, exts] of Object.entries(CATEGORY_EXT)) {
@@ -32,6 +38,9 @@ function detectCategory(filePath) {
   return null;
 }
 
+// "jpeg" et "jpg" sont le même format sous deux extensions différentes ; on les traite
+// comme identiques partout où on compare des extensions (sinon .jpeg -> jpg serait refusé
+// comme "conversion vers un format identique" par erreur, et inversement accepté à tort).
 function normalizeExt(ext) {
   return ext === 'jpeg' ? 'jpg' : ext;
 }
@@ -71,17 +80,24 @@ async function convertOne(filePath, target, options) {
   } else if (category === 'video') {
     if (!VIDEO_FORMATS.includes(target)) throw new Error(`Format vidéo non supporté: ${target}`);
     await convertMedia(filePath, outPath);
+  } else if (category === 'subtitle') {
+    if (!SUBTITLE_FORMATS.includes(target)) throw new Error(`Format de sous-titres non supporté: ${target}`);
+    const text = fs.readFileSync(filePath, 'utf8');
+    const result = convertSubtitle(text, sourceExt, target);
+    fs.writeFileSync(outPath, result);
   }
 
   return outPath;
 }
 
 /**
- * Compresse un fichier image ou vidéo en conservant son format d'origine.
+ * Compresse un fichier image, audio ou vidéo en conservant son format d'origine (contraire
+ * de convertOne, qui change de format). Les données et sous-titres n'ont pas de notion de
+ * "réduire la taille en gardant le même format" et ne sont donc jamais acceptés ici.
  */
 async function compressOne(filePath, level, options) {
   const category = detectCategory(filePath);
-  if (category !== 'image' && category !== 'video') {
+  if (category !== 'image' && category !== 'audio' && category !== 'video') {
     throw new Error(`Compression non supportée pour ce type de fichier : ${filePath}`);
   }
 
@@ -93,19 +109,29 @@ async function compressOne(filePath, level, options) {
     const sourceExt = normalizeExt(path.extname(filePath).slice(1).toLowerCase());
     const inputBuffer = fs.readFileSync(filePath);
     const result = await compressImage(inputBuffer, sourceExt, level);
+    // result.ext peut différer de sourceExt : le HEIC/HEIF est décodé puis compressé en
+    // PNG (sharp ne sait pas ré-encoder du HEIC), donc le fichier de sortie porte .png.
     const outPath = path.join(outDir, `${baseName}-compresse.${result.ext}`);
     fs.writeFileSync(outPath, result.buffer);
     return outPath;
   }
 
+  // Audio et vidéo : contrairement à l'image, le format de sortie est toujours identique
+  // à l'entrée (compressAudio/compressVideo réencodent avec le même codec/conteneur).
   const ext = normalizeExt(path.extname(filePath).slice(1).toLowerCase());
   const outPath = path.join(outDir, `${baseName}-compresse.${ext}`);
-  await compressVideo(filePath, outPath, ext, level);
+  if (category === 'audio') {
+    await compressAudio(filePath, outPath, ext, level);
+  } else {
+    await compressVideo(filePath, outPath, ext, level);
+  }
   return outPath;
 }
 
-const ALL_FORMATS = [...new Set([...IMAGE_FORMATS, ...DATA_FORMATS, ...AUDIO_FORMATS, ...VIDEO_FORMATS])];
-const COMPRESS_FORMATS = [...new Set([...COMPRESSIBLE_IMAGE_FORMATS, ...VIDEO_FORMATS])];
+const ALL_FORMATS = [
+  ...new Set([...IMAGE_FORMATS, ...DATA_FORMATS, ...AUDIO_FORMATS, ...VIDEO_FORMATS, ...SUBTITLE_FORMATS]),
+];
+const COMPRESS_FORMATS = [...new Set([...COMPRESSIBLE_IMAGE_FORMATS, ...AUDIO_FORMATS, ...VIDEO_FORMATS])];
 
 const { version } = require('../package.json');
 
