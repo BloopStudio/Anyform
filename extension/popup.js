@@ -96,8 +96,6 @@ const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
 const fileNameEl = document.getElementById('fileName');
 const formatSelect = document.getElementById('format');
-const scaleRow = document.getElementById('scaleRow');
-const scaleSelect = document.getElementById('scale');
 const compressionRow = document.getElementById('compressionRow');
 const compressionLevelSelect = document.getElementById('compressionLevel');
 const convertBtn = document.getElementById('convertBtn');
@@ -298,7 +296,6 @@ function setBusy(busy) {
   for (const tab of modeTabs.querySelectorAll('.tab')) tab.disabled = busy;
   sourceFormatSelect.disabled = busy;
   formatSelect.disabled = busy;
-  scaleSelect.disabled = busy;
   compressionLevelSelect.disabled = busy;
   dropzone.classList.toggle('is-disabled', busy);
   dropzoneA.classList.toggle('is-disabled', busy);
@@ -409,9 +406,7 @@ function onModeChange(mode) {
 }
 
 function syncUiForCategory() {
-  const category = currentCategory();
   updateAcceptedFileType();
-  scaleRow.hidden = isCompressing() || isInspectMode() || category !== 'image';
   if (isInspectMode()) {
     setInspectFile(null);
   } else {
@@ -706,7 +701,7 @@ wireDropzone(dropzone, fileInput, handleIncomingFile);
 wireDropzone(dropzoneA, fileInputA, (file) => setCompareFile('A', file));
 wireDropzone(dropzoneB, fileInputB, (file) => setCompareFile('B', file));
 
-async function runConversion(file, category, format, scale, level) {
+async function runConversion(file, category, format, level) {
   if (isCompressing()) {
     if (category === 'image') return compressImage(file, level);
     if (category === 'audio') {
@@ -720,7 +715,7 @@ async function runConversion(file, category, format, scale, level) {
     throw new Error('Type de fichier non supporté par le compresseur.');
   }
 
-  if (category === 'image') return convertFile(file, format, { scale });
+  if (category === 'image') return convertFile(file, format);
   if (category === 'data') return convertData(file, format);
   if (category === 'subtitle') return convertSubtitle(file, format);
   if (category === 'audio') {
@@ -738,14 +733,13 @@ async function runConvertOrCompress() {
   const category = currentCategory();
   const compressing = isCompressing();
   const format = compressing ? extensionOf(selectedFile) : formatSelect.value;
-  const scale = parseInt(scaleSelect.value, 10);
   const level = compressionLevelSelect.value;
   const originalSize = selectedFile.size;
 
   hideResult();
   setStatus(compressing ? 'Compression en cours…' : 'Conversion en cours…');
 
-  const blob = await runConversion(selectedFile, category, format, scale, level);
+  const blob = await runConversion(selectedFile, category, format, level);
 
   if (category === 'image') {
     if (previewAfterUrl) URL.revokeObjectURL(previewAfterUrl);
