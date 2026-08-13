@@ -62,7 +62,7 @@ Un onglet en haut de l'interface bascule entre les deux :
 
 - **Convertisseur** : change le format d'un fichier (formats ci-dessous).
 - **Compresseur** : réduit la taille d'un fichier **sans changer son format**. Limité aux
-  images (qualité réduite pour JPG/WebP, redimensionnement pour PNG/GIF/BMP) et aux
+  images (qualité réduite pour JPG/WebP, redimensionnement pour PNG) et aux
   vidéos (CRF réduit sur le même codec/conteneur, audio inchangé), avec un niveau
   Léger/Moyen/Fort. Voir `public/compress.js`.
 
