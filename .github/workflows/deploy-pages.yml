@@ -13,6 +13,7 @@ permissions:
   pages: write
   id-token: write
   deployments: write
+  actions: write
 
 concurrency:
   group: pages
@@ -45,4 +46,15 @@ jobs:
             --jq 'sort_by(.created_at) | reverse | .[10:] | .[].id' | while read -r id; do
             echo "Suppression du déploiement obsolète : $id"
             gh api --method DELETE "repos/${{ github.repository }}/deployments/$id" || true
+          done
+
+      - name: Supprimer les anciens runs du workflow (garder les 10 derniers)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run list --repo "${{ github.repository }}" --workflow "deploy-pages.yml" \
+            --json databaseId,createdAt --limit 100 \
+            --jq 'sort_by(.createdAt) | reverse | .[10:] | .[].databaseId' | while read -r id; do
+            echo "Suppression du run obsolète : $id"
+            gh run delete "$id" --repo "${{ github.repository }}" || true
           done
