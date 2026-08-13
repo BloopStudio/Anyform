@@ -71,15 +71,25 @@ const OUTPUT_FORMAT_OPTIONS = {
   ],
 };
 
+const COMPRESS_FORMATS = {
+  image: ['png', 'jpg', 'webp', 'gif', 'bmp', 'heic'],
+  video: ['mp4', 'webm', 'mov', 'mkv', 'avi', 'flv', 'ogv'],
+};
+
+const modeTabs = document.getElementById('modeTabs');
 const categoryTabs = document.getElementById('categoryTabs');
 const sourceFormatSelect = document.getElementById('sourceFormat');
+const formatRow = document.getElementById('formatRow');
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
 const fileNameEl = document.getElementById('fileName');
 const formatSelect = document.getElementById('format');
 const scaleRow = document.getElementById('scaleRow');
 const scaleSelect = document.getElementById('scale');
+const compressionRow = document.getElementById('compressionRow');
+const compressionLevelSelect = document.getElementById('compressionLevel');
 const convertBtn = document.getElementById('convertBtn');
+const convertBtnLabel = convertBtn.querySelector('.btn-label');
 const statusEl = document.getElementById('status');
 const previewRow = document.getElementById('previewRow');
 const previewBefore = document.getElementById('previewBefore');
@@ -99,10 +109,15 @@ let previewAfterUrl = null;
 let resultBlob = null;
 let resultUrl = null;
 let resultFileName = '';
+let currentModeValue = modeTabs.querySelector('.tab[aria-selected="true"]')?.dataset.mode || 'convert';
 let currentCategoryValue = categoryTabs.querySelector('.tab[aria-selected="true"]')?.dataset.category || 'image';
 
 function currentCategory() {
   return currentCategoryValue;
+}
+
+function isCompressing() {
+  return currentModeValue === 'compress';
 }
 
 function formatBytes(bytes) {
@@ -148,13 +163,23 @@ function hideResult() {
   resultBlob = null;
 }
 
-function showResult(blob, fileName) {
+function showResult(blob, fileName, originalSize = null) {
   resultBlob = blob;
   resultFileName = fileName;
   if (resultUrl) URL.revokeObjectURL(resultUrl);
   resultUrl = URL.createObjectURL(blob);
   resultName.textContent = fileName;
-  resultMeta.textContent = formatBytes(blob.size);
+
+  if (originalSize) {
+    const percent = Math.round(((originalSize - blob.size) / originalSize) * 100);
+    resultMeta.textContent =
+      percent > 0
+        ? `${formatBytes(originalSize)} → ${formatBytes(blob.size)} (-${percent}%)`
+        : `${formatBytes(originalSize)} → ${formatBytes(blob.size)} (déjà optimisé, pas de gain)`;
+  } else {
+    resultMeta.textContent = formatBytes(blob.size);
+  }
+
   resultCard.hidden = false;
 }
 
@@ -162,9 +187,11 @@ function setBusy(busy) {
   convertBtn.disabled = busy || !selectedFile;
   convertBtn.classList.toggle('is-loading', busy);
   for (const tab of categoryTabs.querySelectorAll('.tab')) tab.disabled = busy;
+  for (const tab of modeTabs.querySelectorAll('.tab')) tab.disabled = busy;
   sourceFormatSelect.disabled = busy;
   formatSelect.disabled = busy;
   scaleSelect.disabled = busy;
+  compressionLevelSelect.disabled = busy;
   dropzone.classList.toggle('is-disabled', busy);
 }
 
@@ -187,7 +214,12 @@ function populateSelect(selectEl, options, { preserveSelection = false } = {}) {
 }
 
 function updateAcceptedFileType() {
-  fileInput.accept = `.${sourceFormatSelect.value}`;
+  if (isCompressing()) {
+    const allowed = COMPRESS_FORMATS[currentCategory()] || [];
+    fileInput.accept = allowed.map((ext) => `.${ext}`).join(',');
+  } else {
+    fileInput.accept = `.${sourceFormatSelect.value}`;
+  }
 }
 
 function refreshOutputOptions() {
@@ -197,24 +229,49 @@ function refreshOutputOptions() {
   populateSelect(formatSelect, options, { preserveSelection: true });
 }
 
-function onCategoryChange(category) {
-  currentCategoryValue = category;
-
-  for (const tab of categoryTabs.querySelectorAll('.tab')) {
-    const isActive = tab.dataset.category === category;
+function setActiveTab(tabsEl, datasetKey, value) {
+  for (const tab of tabsEl.querySelectorAll('.tab')) {
+    const isActive = tab.dataset[datasetKey] === value;
     tab.setAttribute('aria-selected', String(isActive));
     tab.classList.toggle('is-active', isActive);
   }
+}
 
+function onCategoryChange(category) {
+  currentCategoryValue = category;
+  setActiveTab(categoryTabs, 'category', category);
   populateSelect(sourceFormatSelect, INPUT_FORMAT_OPTIONS[category]);
   refreshOutputOptions();
+  syncUiForCategory();
+}
+
+function onModeChange(mode) {
+  currentModeValue = mode;
+  setActiveTab(modeTabs, 'mode', mode);
+
+  const compressing = isCompressing();
+  formatRow.hidden = compressing;
+  compressionRow.hidden = !compressing;
+  convertBtnLabel.textContent = compressing ? 'Compresser' : 'Convertir';
+
+  for (const tab of categoryTabs.querySelectorAll('.tab')) {
+    tab.hidden = compressing && !COMPRESS_FORMATS[tab.dataset.category];
+  }
+
+  if (compressing && !COMPRESS_FORMATS[currentCategory()]) {
+    currentCategoryValue = 'image';
+    setActiveTab(categoryTabs, 'category', 'image');
+    populateSelect(sourceFormatSelect, INPUT_FORMAT_OPTIONS.image);
+    refreshOutputOptions();
+  }
+
   syncUiForCategory();
 }
 
 function syncUiForCategory() {
   const category = currentCategory();
   updateAcceptedFileType();
-  scaleRow.hidden = category !== 'image';
+  scaleRow.hidden = isCompressing() || category !== 'image';
   setFile(null);
 }
 
@@ -238,17 +295,31 @@ function setFile(file) {
 
   const category = currentCategory();
   const ext = extensionOf(file);
-  const expectedExt = sourceFormatSelect.value;
 
-  if (ext !== expectedExt) {
-    previewRow.hidden = true;
-    convertBtn.disabled = true;
-    setStatus(
-      `Ce fichier est un .${ext || '?'}, mais le format d'entrée sélectionné est .${expectedExt}. ` +
-        `Choisis le bon format d'entrée ou dépose un fichier .${expectedExt}.`,
-      'error'
-    );
-    return;
+  if (isCompressing()) {
+    const allowed = COMPRESS_FORMATS[category] || [];
+    if (!allowed.includes(ext)) {
+      previewRow.hidden = true;
+      convertBtn.disabled = true;
+      setStatus(
+        `Format .${ext || '?'} non pris en charge par le compresseur. Formats acceptés : ` +
+          `${allowed.map((f) => f.toUpperCase()).join(', ')}.`,
+        'error'
+      );
+      return;
+    }
+  } else {
+    const expectedExt = sourceFormatSelect.value;
+    if (ext !== expectedExt) {
+      previewRow.hidden = true;
+      convertBtn.disabled = true;
+      setStatus(
+        `Ce fichier est un .${ext || '?'}, mais le format d'entrée sélectionné est .${expectedExt}. ` +
+          `Choisis le bon format d'entrée ou dépose un fichier .${expectedExt}.`,
+        'error'
+      );
+      return;
+    }
   }
 
   if (category === 'image') {
@@ -265,6 +336,10 @@ function setFile(file) {
 
 for (const tab of categoryTabs.querySelectorAll('.tab')) {
   tab.addEventListener('click', () => onCategoryChange(tab.dataset.category));
+}
+
+for (const tab of modeTabs.querySelectorAll('.tab')) {
+  tab.addEventListener('click', () => onModeChange(tab.dataset.mode));
 }
 
 sourceFormatSelect.addEventListener('change', () => {
@@ -305,7 +380,16 @@ dropzone.addEventListener('drop', (e) => {
   if (file) setFile(file);
 });
 
-async function runConversion(file, category, format, scale) {
+async function runConversion(file, category, format, scale, level) {
+  if (isCompressing()) {
+    if (category === 'image') return compressImage(file, level);
+    if (category === 'video') {
+      showProgress('Chargement du moteur vidéo (une seule fois par session)…');
+      return compressVideo(file, level, (percent) => updateProgress(percent));
+    }
+    throw new Error('Type de fichier non supporté par le compresseur.');
+  }
+
   if (category === 'image') return convertFile(file, format, { scale });
   if (category === 'data') return convertData(file, format);
   if (category === 'audio') {
@@ -323,15 +407,18 @@ convertBtn.addEventListener('click', async () => {
   if (!selectedFile) return;
 
   const category = currentCategory();
-  const format = formatSelect.value;
+  const compressing = isCompressing();
+  const format = compressing ? extensionOf(selectedFile) : formatSelect.value;
   const scale = parseInt(scaleSelect.value, 10);
+  const level = compressionLevelSelect.value;
+  const originalSize = selectedFile.size;
 
   hideResult();
   setBusy(true);
-  setStatus('Conversion en cours…');
+  setStatus(compressing ? 'Compression en cours…' : 'Conversion en cours…');
 
   try {
-    const blob = await runConversion(selectedFile, category, format, scale);
+    const blob = await runConversion(selectedFile, category, format, scale, level);
 
     if (category === 'image') {
       if (previewAfterUrl) URL.revokeObjectURL(previewAfterUrl);
@@ -340,7 +427,7 @@ convertBtn.addEventListener('click', async () => {
     }
 
     const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
-    const outName = `${baseName}.${format}`;
+    const outName = compressing ? `${baseName}-compresse.${format}` : `${baseName}.${format}`;
 
     const a = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -352,9 +439,9 @@ convertBtn.addEventListener('click', async () => {
     URL.revokeObjectURL(url);
 
     setStatus('');
-    showResult(blob, outName);
+    showResult(blob, outName, compressing ? originalSize : null);
   } catch (err) {
-    setStatus(err.message || 'Échec de la conversion.', 'error');
+    setStatus(err.message || (compressing ? 'Échec de la compression.' : 'Échec de la conversion.'), 'error');
   } finally {
     hideProgress();
     setBusy(false);

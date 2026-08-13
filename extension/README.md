@@ -6,18 +6,23 @@ locale (rien n'est envoyé sur internet).
 
 ## Fonctionnalités
 
-- **Popup** (icône de la barre d'outils) : même interface que l'app web (choisir le type,
-  le format d'entrée, le format de sortie, déposer un fichier).
+- **Popup** (icône de la barre d'outils) : même interface que l'app web — deux modes,
+  **Convertisseur** et **Compresseur**, sélectionnables via un onglet en haut.
 - **Menu contextuel** : clic droit sur une image dans une page → "Convertir cette image
   avec Anyform" → l'image s'ouvre dans un nouvel onglet avec le popup pré-rempli, il ne
   reste qu'à choisir le format de sortie.
+- Thème clair/sombre automatique selon les préférences de l'appareil.
 
 ## Formats supportés
 
-Mêmes formats que l'app web : images (SVG/PNG/JPG/WebP/GIF/BMP/HEIC en entrée, +
-AVIF/ICO/TIFF en sortie), données (CSV/JSON/XLSX), audio (WAV/MP3/OGG/M4A/FLAC/AAC/WMA/Opus)
-et vidéo (MP4/WebM/MOV/MKV/AVI/FLV/OGV + GIF animé en sortie), via le moteur ffmpeg.wasm
-vendorisé localement.
+**Convertisseur** — mêmes formats que l'app web : images (SVG/PNG/JPG/WebP/GIF/BMP/HEIC en
+entrée, + AVIF/ICO/TIFF en sortie), données (CSV/JSON/XLSX), audio
+(WAV/MP3/OGG/M4A/FLAC/AAC/WMA/Opus) et vidéo (MP4/WebM/MOV/MKV/AVI/FLV/OGV + GIF animé en
+sortie), via le moteur ffmpeg.wasm vendorisé localement.
+
+**Compresseur** — réduit la taille d'un fichier sans changer son format, limité aux images
+et vidéos (voir `compress.js` : qualité réduite pour JPG/WebP, redimensionnement pour
+PNG/GIF/BMP, CRF réduit pour la vidéo sur le même codec/conteneur).
 
 **Note CSP (Manifest V3)** : les Workers d'une extension n'héritent pas automatiquement de
 la permission `wasm-unsafe-eval` de la page qui les crée — nécessaire pour que

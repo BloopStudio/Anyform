@@ -111,6 +111,9 @@ h1 { margin: 0; font-size: 1.1rem; line-height: 1.2; }
 }
 
 .tab:disabled { opacity: 0.5; cursor: not-allowed; }
+.tab[hidden] { display: none; }
+
+.mode-tabs { grid-template-columns: repeat(2, 1fr); }
 
 .format-row {
   display: grid;
@@ -118,6 +121,8 @@ h1 { margin: 0; font-size: 1.1rem; line-height: 1.2; }
   align-items: end;
   gap: 8px;
 }
+
+.format-row[hidden] { display: none; }
 
 .format-arrow { color: var(--muted); padding-bottom: 8px; }
 .format-arrow svg { width: 14px; height: 14px; }

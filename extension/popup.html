@@ -23,6 +23,13 @@
     </header>
 
     <div class="field">
+      <div id="modeTabs" class="tabs mode-tabs" role="tablist" aria-label="Mode">
+        <button type="button" class="tab is-active" data-mode="convert" role="tab" aria-selected="true">Convertisseur</button>
+        <button type="button" class="tab" data-mode="compress" role="tab" aria-selected="false">Compresseur</button>
+      </div>
+    </div>
+
+    <div class="field">
       <span class="field-label">Type de fichier</span>
       <div id="categoryTabs" class="tabs" role="tablist" aria-label="Type de fichier">
         <button type="button" class="tab is-active" data-category="image" role="tab" aria-selected="true">
@@ -44,7 +51,7 @@
       </div>
     </div>
 
-    <div class="format-row">
+    <div id="formatRow" class="format-row">
       <div class="field">
         <label for="sourceFormat">Format d'entrée</label>
         <select id="sourceFormat">
@@ -71,6 +78,15 @@
           <option value="tiff">TIFF</option>
         </select>
       </div>
+    </div>
+
+    <div id="compressionRow" class="field" hidden>
+      <label for="compressionLevel">Niveau de compression</label>
+      <select id="compressionLevel">
+        <option value="light">Léger — qualité quasi identique</option>
+        <option value="medium" selected>Moyen — bon compromis</option>
+        <option value="strong">Fort — fichier le plus léger</option>
+      </select>
     </div>
 
     <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Choisir un fichier à convertir">
@@ -140,6 +156,7 @@
   <script src="ffmpeg-engine.js"></script>
   <script src="audio.js"></script>
   <script src="video.js"></script>
+  <script src="compress.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
