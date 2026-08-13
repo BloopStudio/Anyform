@@ -103,9 +103,12 @@ jobs:
     steps:
       # Comme pour le job "build", on repart de la HEAD de la branche (pas du commit qui a
       # déclenché le run) pour lire le numéro de version tout juste incrémenté par "bump".
+      # fetch-depth: 0 (historique complet + tags) est nécessaire pour que "git log
+      # <tag précédent>..HEAD" puisse générer les notes de version ci-dessous.
       - uses: actions/checkout@v4
         with:
           ref: desktop-app
+          fetch-depth: 0
 
       - name: Lire le numéro de version
         id: version
@@ -117,15 +120,40 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Générer les notes de version depuis la dernière release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PREV_TAG=$(gh release list --repo "${{ github.repository }}" --limit 1 --json tagName --jq '.[0].tagName' || true)
+
+          {
+            echo "## Ce qui a changé"
+            echo
+
+            if [ -n "$PREV_TAG" ] && git rev-parse "$PREV_TAG" >/dev/null 2>&1; then
+              git log "${PREV_TAG}..HEAD" --no-merges --pretty=format:'- %s (%h)' \
+                | grep -v '^- chore: bump version' \
+                || echo "- Corrections et ajustements mineurs."
+            else
+              echo "- Première release publiée automatiquement."
+            fi
+
+            echo
+            echo
+            echo "---"
+            echo
+            echo "Build automatique, non signé : Windows SmartScreen et macOS Gatekeeper"
+            echo "afficheront un avertissement au premier lancement."
+          } > release_notes.md
+
+          cat release_notes.md
+
       - name: Publier la release v${{ steps.version.outputs.version }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: Anyform v${{ steps.version.outputs.version }}
-          body: >
-            Build automatique de l'app de bureau Anyform (commit ${{ github.sha }}). Non
-            signé : Windows SmartScreen et macOS Gatekeeper afficheront un avertissement
-            au premier lancement.
+          body_path: release_notes.md
           prerelease: false
           make_latest: true
           files: artifacts/*
