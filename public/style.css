@@ -135,7 +135,7 @@ h1 { margin: 0; font-size: 1.35rem; line-height: 1.2; }
 .tab:disabled { opacity: 0.5; cursor: not-allowed; }
 .tab[hidden] { display: none; }
 
-.mode-tabs { grid-template-columns: repeat(2, 1fr); }
+.mode-tabs { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
 
 .format-row {
   display: grid;
@@ -379,6 +379,64 @@ select:disabled { opacity: 0.5; cursor: not-allowed; }
 .history-name { margin: 0; font-size: 0.78rem; word-break: break-all; }
 .history-meta { margin: 2px 0 0; font-size: 0.7rem; color: var(--muted); }
 
+.compare-dropzones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.compare-dropzones[hidden] { display: none; }
+.compare-dropzones .dropzone { margin-top: 0; }
+
+.inspect-result { margin-top: 14px; }
+.inspect-result[hidden] { display: none; }
+
+.inspect-list {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card-2);
+}
+
+.inspect-list dt { color: var(--muted); font-size: 0.78rem; }
+.inspect-list dd { margin: 0; font-size: 0.85rem; word-break: break-word; }
+
+.compare-result { margin-top: 14px; }
+.compare-result[hidden] { display: none; }
+
+.compare-summary { margin: 0 0 8px; font-size: 0.9rem; font-weight: 600; }
+.compare-note { margin: 0 0 8px; font-size: 0.78rem; color: var(--muted); }
+
+.compare-diff-image {
+  display: block;
+  max-width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+
+.compare-diff-lines {
+  max-height: 260px;
+  overflow-y: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 0.76rem;
+}
+
+.compare-diff-line {
+  padding: 3px 10px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.compare-diff-line--added { background: rgba(74, 222, 128, 0.12); color: var(--success); }
+.compare-diff-line--removed { background: rgba(255, 107, 107, 0.12); color: var(--danger); }
+
 .footer { margin-top: 24px; font-size: 0.72rem; color: var(--muted); text-align: center; opacity: 0.7; }
 .footer a { color: inherit; text-decoration: underline; }
 
@@ -423,4 +481,5 @@ select:disabled { opacity: 0.5; cursor: not-allowed; }
   .result-card { flex-wrap: wrap; }
   .result-actions { flex-direction: row; width: 100%; }
   .btn-secondary, .btn-ghost { flex: 1; justify-content: center; }
+  .compare-dropzones { grid-template-columns: 1fr; }
 }

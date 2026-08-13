@@ -88,6 +88,7 @@ const COMPRESS_FORMATS = {
 };
 
 const modeTabs = document.getElementById('modeTabs');
+const categoryField = document.getElementById('categoryField');
 const categoryTabs = document.getElementById('categoryTabs');
 const sourceFormatSelect = document.getElementById('sourceFormat');
 const formatRow = document.getElementById('formatRow');
@@ -116,6 +117,16 @@ const resetBtn = document.getElementById('resetBtn');
 const historySection = document.getElementById('historySection');
 const historyList = document.getElementById('historyList');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+const inspectResult = document.getElementById('inspectResult');
+const inspectList = document.getElementById('inspectList');
+const compareDropzones = document.getElementById('compareDropzones');
+const dropzoneA = document.getElementById('dropzoneA');
+const dropzoneB = document.getElementById('dropzoneB');
+const fileInputA = document.getElementById('fileInputA');
+const fileInputB = document.getElementById('fileInputB');
+const fileNameA = document.getElementById('fileNameA');
+const fileNameB = document.getElementById('fileNameB');
+const compareResult = document.getElementById('compareResult');
 
 let selectedFile = null;
 let previewBeforeUrl = null;
@@ -123,6 +134,10 @@ let previewAfterUrl = null;
 let resultBlob = null;
 let resultUrl = null;
 let resultFileName = '';
+let selectedInspectFile = null;
+let selectedCompareFileA = null;
+let selectedCompareFileB = null;
+let compareDiffUrl = null; // object URL du dernier PNG de diff, à révoquer avant d'en créer un autre
 let currentModeValue = modeTabs.querySelector('.tab[aria-selected="true"]')?.dataset.mode || 'convert';
 let currentCategoryValue = categoryTabs.querySelector('.tab[aria-selected="true"]')?.dataset.category || 'image';
 
@@ -132,6 +147,25 @@ function currentCategory() {
 
 function isCompressing() {
   return currentModeValue === 'compress';
+}
+
+function isInspectMode() {
+  return currentModeValue === 'inspect';
+}
+
+function isCompareMode() {
+  return currentModeValue === 'compare';
+}
+
+// Déduit la catégorie (image/données/audio/vidéo/sous-titres) d'une extension à partir de
+// INPUT_FORMAT_OPTIONS, plutôt que de dupliquer la liste — utilisé par l'Inspecteur et le
+// Comparateur, qui n'ont pas d'onglet "Type de fichier" et détectent tout depuis le fichier
+// déposé.
+function categoryOfExt(ext) {
+  for (const [category, options] of Object.entries(INPUT_FORMAT_OPTIONS)) {
+    if (options.some((opt) => opt.value === ext)) return category;
+  }
+  return null;
 }
 
 function formatBytes(bytes) {
@@ -258,8 +292,20 @@ clearHistoryBtn.addEventListener('click', () => {
 
 getHistoryEntries().then(renderHistory).catch(() => {});
 
+// Le bouton principal ne se réactive que si l'entrée requise par le mode courant est
+// prête : un fichier pour Convertisseur/Compresseur/Inspecteur, deux pour Comparateur.
+function hasRequiredInput() {
+  if (isInspectMode()) return Boolean(selectedInspectFile);
+  if (isCompareMode()) return Boolean(selectedCompareFileA && selectedCompareFileB);
+  return Boolean(selectedFile);
+}
+
+function updateConvertBtnEnabled() {
+  convertBtn.disabled = !hasRequiredInput();
+}
+
 function setBusy(busy) {
-  convertBtn.disabled = busy || !selectedFile;
+  convertBtn.disabled = busy || !hasRequiredInput();
   convertBtn.classList.toggle('is-loading', busy);
   for (const tab of categoryTabs.querySelectorAll('.tab')) tab.disabled = busy;
   for (const tab of modeTabs.querySelectorAll('.tab')) tab.disabled = busy;
@@ -268,6 +314,8 @@ function setBusy(busy) {
   scaleSelect.disabled = busy;
   compressionLevelSelect.disabled = busy;
   dropzone.classList.toggle('is-disabled', busy);
+  dropzoneA.classList.toggle('is-disabled', busy);
+  dropzoneB.classList.toggle('is-disabled', busy);
 }
 
 function populateSelect(selectEl, options, { preserveSelection = false } = {}) {
@@ -289,7 +337,11 @@ function populateSelect(selectEl, options, { preserveSelection = false } = {}) {
 }
 
 function updateAcceptedFileType() {
-  if (isCompressing()) {
+  if (isInspectMode()) {
+    // Pas de catégorie pré-choisie en mode Inspecteur (voir categoryOfExt) : n'importe
+    // quel format reconnu par Anyform est accepté, la détection se fait après coup.
+    fileInput.accept = '';
+  } else if (isCompressing()) {
     const allowed = COMPRESS_FORMATS[currentCategory()] || [];
     fileInput.accept = allowed.map((ext) => `.${ext}`).join(',');
   } else {
@@ -320,18 +372,36 @@ function onCategoryChange(category) {
   syncUiForCategory();
 }
 
+const MODE_LABELS = { convert: 'Convertir', compress: 'Compresser', inspect: 'Inspecter', compare: 'Comparer' };
+
 function onModeChange(mode) {
   currentModeValue = mode;
   setActiveTab(modeTabs, 'mode', mode);
+  convertBtnLabel.textContent = MODE_LABELS[mode];
 
   const compressing = isCompressing();
-  formatRow.hidden = compressing;
-  compressionRow.hidden = !compressing;
-  convertBtnLabel.textContent = compressing ? 'Compresser' : 'Convertir';
+  const inspecting = isInspectMode();
+  const comparing = isCompareMode();
 
-  for (const tab of categoryTabs.querySelectorAll('.tab')) {
-    tab.hidden = compressing && !COMPRESS_FORMATS[tab.dataset.category];
-  }
+  // Champs propres au Convertisseur/Compresseur, sans objet en Inspecteur/Comparateur.
+  formatRow.hidden = compressing || inspecting || comparing;
+  compressionRow.hidden = !compressing;
+
+  // L'Inspecteur et le Comparateur détectent le type de fichier depuis ce qui est déposé
+  // (voir categoryOfExt) plutôt que de demander à le choisir à l'avance — pas besoin de
+  // configurer un format de sortie ou une liste de formats compressibles pour eux, donc
+  // les onglets Type de fichier n'ont pas de rôle à jouer dans ces deux modes.
+  categoryField.hidden = inspecting || comparing;
+
+  // Une seule entrée (dropzone classique) pour tous les modes sauf le Comparateur, qui en
+  // a besoin de deux (fichier A / fichier B) affichées côte à côte à la place.
+  dropzone.hidden = comparing;
+  compareDropzones.hidden = !comparing;
+
+  hideResult();
+  inspectResult.hidden = true;
+  compareResult.hidden = true;
+  if (inspecting || comparing) previewRow.hidden = true;
 
   if (compressing && !COMPRESS_FORMATS[currentCategory()]) {
     currentCategoryValue = 'image';
@@ -340,14 +410,26 @@ function onModeChange(mode) {
     refreshOutputOptions();
   }
 
-  syncUiForCategory();
+  for (const tab of categoryTabs.querySelectorAll('.tab')) {
+    tab.hidden = compressing && !COMPRESS_FORMATS[tab.dataset.category];
+  }
+
+  if (comparing) {
+    resetCompare();
+  } else {
+    syncUiForCategory();
+  }
 }
 
 function syncUiForCategory() {
   const category = currentCategory();
   updateAcceptedFileType();
-  scaleRow.hidden = isCompressing() || category !== 'image';
-  setFile(null);
+  scaleRow.hidden = isCompressing() || isInspectMode() || category !== 'image';
+  if (isInspectMode()) {
+    setInspectFile(null);
+  } else {
+    setFile(null);
+  }
 }
 
 function setFile(file) {
@@ -409,6 +491,170 @@ function setFile(file) {
   setStatus('');
 }
 
+// Mode Inspecteur : contrairement à setFile (Convertisseur/Compresseur), pas de catégorie
+// pré-choisie à valider contre le fichier déposé — la catégorie est déduite de son
+// extension via categoryOfExt. Rejette juste les extensions qu'Anyform ne connaît pas.
+function setInspectFile(file) {
+  selectedInspectFile = file;
+  fileNameEl.textContent = file ? file.name : '';
+  inspectResult.hidden = true;
+
+  if (!file) {
+    updateConvertBtnEnabled();
+    setStatus('');
+    return;
+  }
+
+  const ext = extensionOf(file);
+  if (!categoryOfExt(ext)) {
+    selectedInspectFile = null;
+    updateConvertBtnEnabled();
+    setStatus(`Format .${ext || '?'} non reconnu par Anyform.`, 'error');
+    return;
+  }
+
+  updateConvertBtnEnabled();
+  setStatus('');
+}
+
+function renderInspectResult(items) {
+  inspectList.innerHTML = '';
+  for (const item of items) {
+    const dt = document.createElement('dt');
+    dt.textContent = item.label;
+    const dd = document.createElement('dd');
+    dd.textContent = item.value;
+    inspectList.append(dt, dd);
+  }
+  inspectResult.hidden = false;
+}
+
+// Mode Comparateur : deux dropzones indépendantes (A/B) au lieu d'une seule. La catégorie
+// n'est connue qu'une fois les deux fichiers déposés (voir updateCompareCategoryStatus),
+// pas choisie à l'avance comme pour le Convertisseur/Compresseur.
+function setCompareFile(slot, file) {
+  if (slot === 'A') {
+    selectedCompareFileA = file;
+    fileNameA.textContent = file ? file.name : '';
+  } else {
+    selectedCompareFileB = file;
+    fileNameB.textContent = file ? file.name : '';
+  }
+  compareResult.hidden = true;
+  updateCompareCategoryStatus();
+  updateConvertBtnEnabled();
+}
+
+// Vérifie que les deux fichiers déposés sont de la même catégorie (comparer un CSV et une
+// vidéo n'a pas de sens) et affiche une erreur explicite sinon, sans bloquer la sélection
+// elle-même — l'utilisateur peut toujours remplacer l'un des deux fichiers pour corriger.
+function updateCompareCategoryStatus() {
+  if (!selectedCompareFileA || !selectedCompareFileB) {
+    setStatus('');
+    return;
+  }
+  const categoryA = categoryOfExt(extensionOf(selectedCompareFileA));
+  const categoryB = categoryOfExt(extensionOf(selectedCompareFileB));
+
+  if (!categoryA || !categoryB) {
+    setStatus('Un des deux fichiers a un format non reconnu par Anyform.', 'error');
+    return;
+  }
+  if (categoryA !== categoryB) {
+    setStatus('Les deux fichiers doivent être du même type pour être comparés.', 'error');
+    return;
+  }
+  setStatus('');
+}
+
+function resetCompare() {
+  selectedCompareFileA = null;
+  selectedCompareFileB = null;
+  fileNameA.textContent = '';
+  fileNameB.textContent = '';
+  compareResult.hidden = true;
+  updateConvertBtnEnabled();
+  setStatus('');
+}
+
+function renderCompareResult(result) {
+  compareResult.innerHTML = '';
+  compareResult.hidden = false;
+
+  const summary = document.createElement('p');
+  summary.className = 'compare-summary';
+
+  if (result.type === 'image') {
+    summary.textContent = result.identical
+      ? 'Images identiques.'
+      : `${result.percentIdentical}% des pixels identiques (zone commune).`;
+    compareResult.appendChild(summary);
+
+    if (result.sizeMismatch) {
+      const note = document.createElement('p');
+      note.className = 'compare-note';
+      note.textContent = `Dimensions différentes : A = ${result.dimensionsA}, B = ${result.dimensionsB} — comparaison faite sur leur zone commune.`;
+      compareResult.appendChild(note);
+    }
+
+    if (compareDiffUrl) URL.revokeObjectURL(compareDiffUrl);
+    compareDiffUrl = URL.createObjectURL(result.diffBlob);
+    const img = document.createElement('img');
+    img.className = 'compare-diff-image';
+    img.src = compareDiffUrl;
+    img.alt = 'Différences en rouge sur fond gris';
+    compareResult.appendChild(img);
+
+    const downloadDiffBtn = document.createElement('button');
+    downloadDiffBtn.type = 'button';
+    downloadDiffBtn.className = 'btn-secondary';
+    downloadDiffBtn.textContent = 'Télécharger la diff';
+    downloadDiffBtn.addEventListener('click', () => downloadBlob(result.diffBlob, 'diff.png'));
+    compareResult.appendChild(downloadDiffBtn);
+    return;
+  }
+
+  if (result.type === 'text') {
+    summary.textContent = result.identical
+      ? 'Fichiers identiques.'
+      : `${result.added} ligne(s) ajoutée(s), ${result.removed} ligne(s) supprimée(s).`;
+    compareResult.appendChild(summary);
+
+    const list = document.createElement('div');
+    list.className = 'compare-diff-lines';
+    for (const line of result.diff) {
+      if (line.type === 'equal') continue; // seules les lignes qui changent sont affichées
+      const row = document.createElement('div');
+      row.className = `compare-diff-line compare-diff-line--${line.type}`;
+      row.textContent = `${line.type === 'added' ? '+' : '-'} ${line.text}`;
+      list.appendChild(row);
+    }
+    compareResult.appendChild(list);
+    return;
+  }
+
+  // type === 'hash' : comparaison par empreinte SHA-256 uniquement (audio/vidéo/xlsx, ou
+  // fichier texte trop volumineux pour une diff ligne à ligne détaillée).
+  summary.textContent = result.identical ? 'Fichiers identiques (même empreinte).' : 'Fichiers différents.';
+  compareResult.appendChild(summary);
+
+  if (result.tooLarge) {
+    const note = document.createElement('p');
+    note.className = 'compare-note';
+    note.textContent = 'Fichier trop volumineux pour une diff ligne à ligne détaillée — comparaison par empreinte seulement.';
+    compareResult.appendChild(note);
+  }
+
+  const details = document.createElement('p');
+  details.className = 'compare-note';
+  details.textContent = `A : ${formatBytes(result.sizeA)} — SHA-256 ${result.hashA.slice(0, 16)}…`;
+  compareResult.appendChild(details);
+  const detailsB = document.createElement('p');
+  detailsB.className = 'compare-note';
+  detailsB.textContent = `B : ${formatBytes(result.sizeB)} — SHA-256 ${result.hashB.slice(0, 16)}…`;
+  compareResult.appendChild(detailsB);
+}
+
 for (const tab of categoryTabs.querySelectorAll('.tab')) {
   tab.addEventListener('click', () => onCategoryChange(tab.dataset.category));
 }
@@ -423,37 +669,55 @@ sourceFormatSelect.addEventListener('change', () => {
   setFile(selectedFile);
 });
 
-dropzone.addEventListener('click', () => fileInput.click());
-dropzone.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault();
-    fileInput.click();
-  }
-});
+// Le mode courant décide qui reçoit le fichier déposé sur la dropzone principale :
+// Convertisseur/Compresseur (setFile, validé contre la catégorie choisie) ou Inspecteur
+// (setInspectFile, catégorie déduite du fichier lui-même).
+function handleIncomingFile(file) {
+  if (!file) return;
+  if (isInspectMode()) setInspectFile(file);
+  else setFile(file);
+}
 
-fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) setFile(fileInput.files[0]);
-});
-
-['dragenter', 'dragover'].forEach((evt) => {
-  dropzone.addEventListener(evt, (e) => {
-    e.preventDefault();
-    if (!dropzone.classList.contains('is-disabled')) dropzone.classList.add('dragover');
+// Câble une zone de glisser-déposer (clic, clavier, drag & drop, <input type=file>) sur un
+// gestionnaire commun — utilisé pour la dropzone principale et pour les deux du
+// Comparateur, qui ont exactement le même comportement d'interaction.
+function wireDropzone(zoneEl, inputEl, onFile) {
+  zoneEl.addEventListener('click', () => inputEl.click());
+  zoneEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      inputEl.click();
+    }
   });
-});
 
-['dragleave', 'drop'].forEach((evt) => {
-  dropzone.addEventListener(evt, (e) => {
-    e.preventDefault();
-    dropzone.classList.remove('dragover');
+  inputEl.addEventListener('change', () => {
+    if (inputEl.files[0]) onFile(inputEl.files[0]);
   });
-});
 
-dropzone.addEventListener('drop', (e) => {
-  if (dropzone.classList.contains('is-disabled')) return;
-  const file = e.dataTransfer.files[0];
-  if (file) setFile(file);
-});
+  ['dragenter', 'dragover'].forEach((evt) => {
+    zoneEl.addEventListener(evt, (e) => {
+      e.preventDefault();
+      if (!zoneEl.classList.contains('is-disabled')) zoneEl.classList.add('dragover');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach((evt) => {
+    zoneEl.addEventListener(evt, (e) => {
+      e.preventDefault();
+      zoneEl.classList.remove('dragover');
+    });
+  });
+
+  zoneEl.addEventListener('drop', (e) => {
+    if (zoneEl.classList.contains('is-disabled')) return;
+    const file = e.dataTransfer.files[0];
+    if (file) onFile(file);
+  });
+}
+
+wireDropzone(dropzone, fileInput, handleIncomingFile);
+wireDropzone(dropzoneA, fileInputA, (file) => setCompareFile('A', file));
+wireDropzone(dropzoneB, fileInputB, (file) => setCompareFile('B', file));
 
 async function runConversion(file, category, format, scale, level) {
   if (isCompressing()) {
@@ -483,9 +747,7 @@ async function runConversion(file, category, format, scale, level) {
   throw new Error('Type de fichier non supporté.');
 }
 
-convertBtn.addEventListener('click', async () => {
-  if (!selectedFile) return;
-
+async function runConvertOrCompress() {
   const category = currentCategory();
   const compressing = isCompressing();
   const format = compressing ? extensionOf(selectedFile) : formatSelect.value;
@@ -502,38 +764,73 @@ convertBtn.addEventListener('click', async () => {
   }
 
   hideResult();
-  setBusy(true);
   setStatus(compressing ? 'Compression en cours…' : 'Conversion en cours…');
 
+  const blob = await runConversion(selectedFile, category, format, scale, level);
+
+  if (category === 'image') {
+    if (previewAfterUrl) URL.revokeObjectURL(previewAfterUrl);
+    previewAfterUrl = URL.createObjectURL(blob);
+    previewAfter.src = previewAfterUrl;
+  }
+
+  const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
+  const outName = compressing ? `${baseName}-compresse.${format}` : `${baseName}.${format}`;
+
+  downloadBlob(blob, outName);
+
+  setStatus('');
+  showResult(blob, outName, compressing ? originalSize : null);
+  notifyIfHidden(category, compressing);
+
+  addHistoryEntry({
+    name: outName,
+    blob,
+    mode: compressing ? 'compress' : 'convert',
+    category,
+    originalSize: compressing ? originalSize : null,
+  })
+    .then(renderHistory)
+    .catch(() => {});
+}
+
+async function runInspect() {
+  setStatus('Analyse en cours…');
+  const category = categoryOfExt(extensionOf(selectedInspectFile));
+  const items = await inspectFile(selectedInspectFile, category);
+  setStatus('');
+  renderInspectResult(items);
+}
+
+async function runCompare() {
+  const category = categoryOfExt(extensionOf(selectedCompareFileA));
+  const categoryB = categoryOfExt(extensionOf(selectedCompareFileB));
+  if (!category || category !== categoryB) {
+    throw new Error('Les deux fichiers doivent être du même type reconnu par Anyform pour être comparés.');
+  }
+  setStatus('Comparaison en cours…');
+  const result = await compareFiles(selectedCompareFileA, selectedCompareFileB, category);
+  setStatus('');
+  renderCompareResult(result);
+}
+
+convertBtn.addEventListener('click', async () => {
+  if (!hasRequiredInput()) return;
+
+  setBusy(true);
   try {
-    const blob = await runConversion(selectedFile, category, format, scale, level);
-
-    if (category === 'image') {
-      if (previewAfterUrl) URL.revokeObjectURL(previewAfterUrl);
-      previewAfterUrl = URL.createObjectURL(blob);
-      previewAfter.src = previewAfterUrl;
-    }
-
-    const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
-    const outName = compressing ? `${baseName}-compresse.${format}` : `${baseName}.${format}`;
-
-    downloadBlob(blob, outName);
-
-    setStatus('');
-    showResult(blob, outName, compressing ? originalSize : null);
-    notifyIfHidden(category, compressing);
-
-    addHistoryEntry({
-      name: outName,
-      blob,
-      mode: compressing ? 'compress' : 'convert',
-      category,
-      originalSize: compressing ? originalSize : null,
-    })
-      .then(renderHistory)
-      .catch(() => {});
+    if (isInspectMode()) await runInspect();
+    else if (isCompareMode()) await runCompare();
+    else await runConvertOrCompress();
   } catch (err) {
-    setStatus(err.message || (compressing ? 'Échec de la compression.' : 'Échec de la conversion.'), 'error');
+    const fallback = isInspectMode()
+      ? "Échec de l'inspection."
+      : isCompareMode()
+        ? 'Échec de la comparaison.'
+        : isCompressing()
+          ? 'Échec de la compression.'
+          : 'Échec de la conversion.';
+    setStatus(err.message || fallback, 'error');
   } finally {
     hideProgress();
     setBusy(false);

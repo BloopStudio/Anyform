@@ -19,15 +19,16 @@ navigateur, tout est vendorisé localement dans `public/vendor/` — aucun appel
 externe, même pour la vidéo/l'audio (ffmpeg.wasm) ou le décodage HEIC.
 
 Il suffit d'ouvrir `public/index.html`, ou de visiter la page déployée sur GitHub Pages, de
-choisir le mode (**Convertisseur** ou **Compresseur**), le type de fichier (onglets
-Image/Données/Audio/Vidéo/Sous-titres), déposer un fichier, choisir le format cible, et
-cliquer sur "Convertir". Une barre de progression suit les conversions audio/vidéo (moteur
-ffmpeg.wasm), et le résultat s'affiche dans une carte dédiée avec téléchargement et bouton
-pour recommencer. Le thème (clair/sombre) suit automatiquement les préférences de
-l'appareil. Si l'onglet n'est plus visible à la fin d'une conversion audio/vidéo, une
-notification native prévient (permission demandée au premier clic sur "Convertir").
+choisir le mode (**Convertisseur**, **Compresseur**, **Inspecteur** ou **Comparateur**), le
+type de fichier (onglets Image/Données/Audio/Vidéo/Sous-titres, quand le mode en a besoin),
+déposer un fichier, choisir le format cible, et cliquer sur "Convertir". Une barre de
+progression suit les conversions audio/vidéo (moteur ffmpeg.wasm), et le résultat s'affiche
+dans une carte dédiée avec téléchargement et bouton pour recommencer. Le thème
+(clair/sombre) suit automatiquement les préférences de l'appareil. Si l'onglet n'est plus
+visible à la fin d'une conversion audio/vidéo, une notification native prévient (permission
+demandée au premier clic sur "Convertir").
 
-### Deux modes
+### Quatre modes
 
 - **Convertisseur** : change le format d'un fichier (formats ci-dessous).
 - **Compresseur** : réduit la taille d'un fichier **sans changer son format** — limité aux
@@ -37,6 +38,20 @@ notification native prévient (permission demandée au premier clic sur "Convert
   bitrate réduit pour les formats compressés, `-compression_level` pour FLAC (sans perte),
   fréquence d'échantillonnage réduite pour WAV (PCM brut, pas de notion de bitrate). Vidéo :
   CRF réduit sur le même codec/conteneur, audio inchangé. Voir `public/compress.js`.
+- **Inspecteur** : lit les propriétés d'un fichier (dimensions, durée, nombre de
+  lignes/colonnes, nombre de sous-titres...) sans le modifier ni produire de fichier de
+  sortie. Volontairement léger : la durée/résolution audio/vidéo vient des métadonnées
+  natives du navigateur (`<audio>`/`<video>`), pas d'un décodage complet via ffmpeg.wasm.
+  Pas d'onglet Type de fichier : la catégorie est déduite de l'extension du fichier déposé.
+  Voir `public/inspect.js`.
+- **Comparateur** : seul mode à deux entrées (fichier A / fichier B). Images : diff pixel
+  par pixel rendue dans une image téléchargeable (zones qui changent en rouge, reste en
+  gris atténué), sur la zone commune si les dimensions diffèrent. Données/sous-titres :
+  diff ligne à ligne façon `git diff` (algorithme LCS), avec repli sur une simple
+  comparaison d'empreinte SHA-256 au-delà de 3000 lignes (le coût O(n×m) de la diff
+  deviendrait trop lourd pour un onglet de navigateur). Tout le reste (audio, vidéo, XLSX) :
+  comparaison par empreinte SHA-256 uniquement, pas de diff détaillée. Voir
+  `public/compare.js`.
 
 ### Formats supportés (Convertisseur)
 
@@ -92,6 +107,8 @@ npx serve public
 - `public/data.js` — conversion de données (CSV/JSON/XLSX)
 - `public/subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
 - `public/history.js` — historique local des 5 derniers fichiers (IndexedDB)
+- `public/inspect.js` — lecture des propriétés d'un fichier, sans le modifier
+- `public/compare.js` — diff entre deux fichiers (image, texte ligne à ligne, ou empreinte)
 - `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
 - `public/audio.js` / `public/video.js` — conversion audio/vidéo (ffmpeg.wasm)
 - `public/app.js` — interface (mode, onglets par type, formats, glisser-déposer,
