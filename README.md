@@ -89,6 +89,12 @@ fichiers convertis/compressés restent accessibles (re-téléchargeables) dans u
 local sous le résultat (`public/history.js`, IndexedDB). Si la fenêtre est en arrière-plan
 à la fin d'une conversion audio/vidéo, une notification native prévient.
 
+En Convertisseur/Compresseur, déposer plusieurs fichiers à la fois affiche une liste de
+résultats — téléchargement individuel par fichier, plus un bouton "Tout (.zip)" pour tout
+récupérer d'un coup (aucun téléchargement automatique groupé). Les échecs individuels
+restent visibles avec leur erreur, n'interrompent pas le reste du lot. Voir
+`public/zip.js`.
+
 ## Formats supportés (Convertisseur)
 
 - Images : SVG, PNG, JPG, WebP, GIF, BMP, HEIC en entrée ⇄ PNG/JPG/WebP/AVIF/ICO/TIFF/SVG en
@@ -115,6 +121,7 @@ local sous le résultat (`public/history.js`, IndexedDB). Si la fenêtre est en 
 - `public/history.js` — historique local des 5 derniers fichiers (IndexedDB)
 - `public/inspect.js` — lecture des propriétés d'un fichier, sans le modifier
 - `public/compare.js` — diff entre deux fichiers (image, texte ligne à ligne, ou empreinte)
+- `public/zip.js` — génération d'archives ZIP pour le traitement par lot
 - `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
 - `public/audio.js` / `public/video.js` — conversion audio/vidéo (ffmpeg.wasm)
 - `public/app.js` — interface (mode, onglets par type, formats, glisser-déposer,
