@@ -19,12 +19,23 @@ navigateur, tout est vendorisé localement dans `public/vendor/` — aucun appel
 externe, même pour la vidéo/l'audio (ffmpeg.wasm) ou le décodage HEIC.
 
 Il suffit d'ouvrir `public/index.html`, ou de visiter la page déployée sur GitHub Pages, de
-choisir le type de fichier (onglets Image/Données/Audio/Vidéo), déposer un fichier, choisir
-le format cible, et cliquer sur "Convertir". Une barre de progression suit les conversions
-audio/vidéo (moteur ffmpeg.wasm), et le résultat s'affiche dans une carte dédiée avec
-téléchargement et bouton pour recommencer.
+choisir le mode (**Convertisseur** ou **Compresseur**), le type de fichier (onglets
+Image/Données/Audio/Vidéo), déposer un fichier, choisir le format cible, et cliquer sur
+"Convertir". Une barre de progression suit les conversions audio/vidéo (moteur
+ffmpeg.wasm), et le résultat s'affiche dans une carte dédiée avec téléchargement et bouton
+pour recommencer. Le thème (clair/sombre) suit automatiquement les préférences de
+l'appareil.
 
-### Formats supportés
+### Deux modes
+
+- **Convertisseur** : change le format d'un fichier (formats ci-dessous).
+- **Compresseur** : réduit la taille d'un fichier **sans changer son format** — limité aux
+  images et vidéos, avec un niveau Léger/Moyen/Fort. Images : qualité réduite pour
+  JPG/WebP, redimensionnement pour PNG/GIF/BMP (pas de curseur de qualité pour ceux-là).
+  Vidéo : CRF réduit sur le même codec/conteneur, audio inchangé. Voir
+  `public/compress.js`.
+
+### Formats supportés (Convertisseur)
 
 - Images : SVG, PNG, JPG, WebP, GIF, BMP, HEIC en entrée ⇄ PNG/JPG/WebP/AVIF/ICO/TIFF/SVG en
   sortie (vectorisation raster → SVG incluse via ImageTracer.js, décodage HEIC via
@@ -65,6 +76,7 @@ npx serve public
 ## Structure
 
 - `public/convert.js` — conversion d'images (Canvas API + ImageTracer.js + heic2any + UTIF.js)
+- `public/compress.js` — compression d'images/vidéos (même format en sortie)
 - `public/data.js` — conversion de données (CSV/JSON/XLSX)
 - `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
 - `public/audio.js` / `public/video.js` — conversion audio/vidéo (ffmpeg.wasm)
