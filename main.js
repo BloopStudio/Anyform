@@ -40,8 +40,8 @@ autoUpdater.on('error', (err) => {
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 520,
-    height: 780,
+    width: 960,
+    height: 800,
     minWidth: 420,
     minHeight: 600,
     title: 'Anyform',
