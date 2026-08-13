@@ -98,10 +98,10 @@
       </select>
     </div>
 
-    <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Choisir un fichier à convertir">
+    <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Choisir un ou plusieurs fichiers à convertir">
       <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /><path d="M12 12v9" /><path d="m16 16-4-4-4 4" /></svg>
-      <p class="dropzone-text">Glisse un fichier ici ou clique pour en choisir un</p>
-      <input id="fileInput" type="file" hidden />
+      <p class="dropzone-text">Glisse un ou plusieurs fichiers ici ou clique pour en choisir</p>
+      <input id="fileInput" type="file" hidden multiple />
       <p id="fileName" class="filename"></p>
     </div>
 
@@ -168,6 +168,17 @@
       </div>
     </div>
 
+    <div id="batchResultsSection" class="batch-results" hidden>
+      <div class="batch-results-header">
+        <span class="field-label">Résultats (<span id="batchCount"></span>)</span>
+        <button id="downloadZipBtn" type="button" class="btn-secondary" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
+          Tout (.zip)
+        </button>
+      </div>
+      <ul id="batchResultsList" class="batch-results-list"></ul>
+    </div>
+
     <div id="inspectResult" class="inspect-result" hidden>
       <dl id="inspectList" class="inspect-list"></dl>
     </div>
@@ -202,6 +213,7 @@
   <script src="history.js?v=__BUILD_ID__"></script>
   <script src="inspect.js?v=__BUILD_ID__"></script>
   <script src="compare.js?v=__BUILD_ID__"></script>
+  <script src="zip.js?v=__BUILD_ID__"></script>
   <script src="app.js?v=__BUILD_ID__"></script>
 </body>
 </html>

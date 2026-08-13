@@ -127,8 +127,16 @@ const fileInputB = document.getElementById('fileInputB');
 const fileNameA = document.getElementById('fileNameA');
 const fileNameB = document.getElementById('fileNameB');
 const compareResult = document.getElementById('compareResult');
+const batchResultsSection = document.getElementById('batchResultsSection');
+const batchCount = document.getElementById('batchCount');
+const batchResultsList = document.getElementById('batchResultsList');
+const downloadZipBtn = document.getElementById('downloadZipBtn');
 
 let selectedFile = null;
+// Fichiers du traitement par lot (Convertisseur/Compresseur, 2+ fichiers à la fois) —
+// vide en dehors de ce cas précis. selectedFile (ci-dessus) reste le chemin normal pour
+// un seul fichier, inchangé, afin de ne rien risquer sur ce qui est déjà testé.
+let selectedFiles = [];
 let previewBeforeUrl = null;
 let previewAfterUrl = null;
 let resultBlob = null;
@@ -297,7 +305,7 @@ getHistoryEntries().then(renderHistory).catch(() => {});
 function hasRequiredInput() {
   if (isInspectMode()) return Boolean(selectedInspectFile);
   if (isCompareMode()) return Boolean(selectedCompareFileA && selectedCompareFileB);
-  return Boolean(selectedFile);
+  return Boolean(selectedFile) || selectedFiles.length > 0;
 }
 
 function updateConvertBtnEnabled() {
@@ -316,6 +324,7 @@ function setBusy(busy) {
   dropzone.classList.toggle('is-disabled', busy);
   dropzoneA.classList.toggle('is-disabled', busy);
   dropzoneB.classList.toggle('is-disabled', busy);
+  downloadZipBtn.disabled = busy;
 }
 
 function populateSelect(selectEl, options, { preserveSelection = false } = {}) {
@@ -399,6 +408,7 @@ function onModeChange(mode) {
   compareDropzones.hidden = !comparing;
 
   hideResult();
+  hideBatchResults();
   inspectResult.hidden = true;
   compareResult.hidden = true;
   if (inspecting || comparing) previewRow.hidden = true;
@@ -432,10 +442,38 @@ function syncUiForCategory() {
   }
 }
 
+// Vérifie qu'un fichier correspond au mode/catégorie courants, sinon lève une erreur avec
+// un message prêt à afficher. Factorisé pour être réutilisé à la fois par setFile
+// (validation immédiate, un seul fichier) et par le traitement par lot (validation
+// différée à l'exécution, par fichier — voir runBatchConvertOrCompress).
+function assertFileMatchesMode(file, category, compressing) {
+  const ext = extensionOf(file);
+
+  if (compressing) {
+    const allowed = COMPRESS_FORMATS[category] || [];
+    if (!allowed.includes(ext)) {
+      throw new Error(
+        `Format .${ext || '?'} non pris en charge par le compresseur. Formats acceptés : ` +
+          `${allowed.map((f) => f.toUpperCase()).join(', ')}.`
+      );
+    }
+  } else {
+    const expectedExt = sourceFormatSelect.value;
+    if (ext !== expectedExt) {
+      throw new Error(
+        `Ce fichier est un .${ext || '?'}, mais le format d'entrée sélectionné est .${expectedExt}. ` +
+          `Choisis le bon format d'entrée ou dépose un fichier .${expectedExt}.`
+      );
+    }
+  }
+}
+
 function setFile(file) {
   selectedFile = file;
+  selectedFiles = [];
   fileNameEl.textContent = file ? file.name : '';
   hideResult();
+  hideBatchResults();
   hideProgress();
 
   if (previewBeforeUrl) URL.revokeObjectURL(previewBeforeUrl);
@@ -451,32 +489,14 @@ function setFile(file) {
   }
 
   const category = currentCategory();
-  const ext = extensionOf(file);
 
-  if (isCompressing()) {
-    const allowed = COMPRESS_FORMATS[category] || [];
-    if (!allowed.includes(ext)) {
-      previewRow.hidden = true;
-      convertBtn.disabled = true;
-      setStatus(
-        `Format .${ext || '?'} non pris en charge par le compresseur. Formats acceptés : ` +
-          `${allowed.map((f) => f.toUpperCase()).join(', ')}.`,
-        'error'
-      );
-      return;
-    }
-  } else {
-    const expectedExt = sourceFormatSelect.value;
-    if (ext !== expectedExt) {
-      previewRow.hidden = true;
-      convertBtn.disabled = true;
-      setStatus(
-        `Ce fichier est un .${ext || '?'}, mais le format d'entrée sélectionné est .${expectedExt}. ` +
-          `Choisis le bon format d'entrée ou dépose un fichier .${expectedExt}.`,
-        'error'
-      );
-      return;
-    }
+  try {
+    assertFileMatchesMode(file, category, isCompressing());
+  } catch (err) {
+    previewRow.hidden = true;
+    convertBtn.disabled = true;
+    setStatus(err.message, 'error');
+    return;
   }
 
   if (category === 'image') {
@@ -489,6 +509,32 @@ function setFile(file) {
 
   convertBtn.disabled = false;
   setStatus('');
+}
+
+// Dispatcher appelé par la dropzone principale en mode Convertisseur/Compresseur : un
+// seul fichier suit le chemin existant (setFile, testé, avec validation immédiate et
+// aperçu avant/après pour les images) ; plusieurs fichiers passent en traitement par lot,
+// dont la validation est différée à l'exécution (voir runBatchConvertOrCompress) —
+// afficher N messages d'erreur avant même de cliquer serait plus confus qu'utile.
+function setFiles(files) {
+  if (files.length <= 1) {
+    setFile(files[0] || null);
+    return;
+  }
+
+  selectedFile = null;
+  selectedFiles = files;
+  hideResult();
+  hideBatchResults();
+  hideProgress();
+  if (previewBeforeUrl) URL.revokeObjectURL(previewBeforeUrl);
+  if (previewAfterUrl) URL.revokeObjectURL(previewAfterUrl);
+  previewAfterUrl = null;
+  previewRow.hidden = true;
+
+  fileNameEl.textContent = `${files.length} fichiers sélectionnés`;
+  setStatus('');
+  updateConvertBtnEnabled();
 }
 
 // Mode Inspecteur : contrairement à setFile (Convertisseur/Compresseur), pas de catégorie
@@ -666,22 +712,26 @@ for (const tab of modeTabs.querySelectorAll('.tab')) {
 sourceFormatSelect.addEventListener('change', () => {
   updateAcceptedFileType();
   refreshOutputOptions();
-  setFile(selectedFile);
+  // En lot, la validation est différée à l'exécution (voir setFiles) : rien à refaire
+  // ici, un setFile(null) effacerait la sélection en cours pour rien.
+  if (selectedFiles.length === 0) setFile(selectedFile);
 });
 
-// Le mode courant décide qui reçoit le fichier déposé sur la dropzone principale :
-// Convertisseur/Compresseur (setFile, validé contre la catégorie choisie) ou Inspecteur
-// (setInspectFile, catégorie déduite du fichier lui-même).
-function handleIncomingFile(file) {
-  if (!file) return;
-  if (isInspectMode()) setInspectFile(file);
-  else setFile(file);
+// Le mode courant décide qui reçoit le(s) fichier(s) déposé(s) sur la dropzone
+// principale : Convertisseur/Compresseur acceptent plusieurs fichiers à la fois
+// (traitement par lot, voir setFiles) ; Inspecteur reste volontairement limité à un seul
+// fichier à la fois (n'a pas de notion de lot), donc seul le premier est retenu.
+function handleIncomingFiles(files) {
+  if (!files.length) return;
+  if (isInspectMode()) setInspectFile(files[0]);
+  else setFiles(files);
 }
 
 // Câble une zone de glisser-déposer (clic, clavier, drag & drop, <input type=file>) sur un
-// gestionnaire commun — utilisé pour la dropzone principale et pour les deux du
-// Comparateur, qui ont exactement le même comportement d'interaction.
-function wireDropzone(zoneEl, inputEl, onFile) {
+// gestionnaire commun — utilisé pour la dropzone principale (peut recevoir plusieurs
+// fichiers) et pour les deux du Comparateur (toujours un seul, le second est ignoré par
+// leur callback). onFiles reçoit toujours un tableau, jamais un fichier isolé.
+function wireDropzone(zoneEl, inputEl, onFiles) {
   zoneEl.addEventListener('click', () => inputEl.click());
   zoneEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -691,7 +741,7 @@ function wireDropzone(zoneEl, inputEl, onFile) {
   });
 
   inputEl.addEventListener('change', () => {
-    if (inputEl.files[0]) onFile(inputEl.files[0]);
+    if (inputEl.files.length) onFiles(Array.from(inputEl.files));
   });
 
   ['dragenter', 'dragover'].forEach((evt) => {
@@ -710,14 +760,14 @@ function wireDropzone(zoneEl, inputEl, onFile) {
 
   zoneEl.addEventListener('drop', (e) => {
     if (zoneEl.classList.contains('is-disabled')) return;
-    const file = e.dataTransfer.files[0];
-    if (file) onFile(file);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length) onFiles(files);
   });
 }
 
-wireDropzone(dropzone, fileInput, handleIncomingFile);
-wireDropzone(dropzoneA, fileInputA, (file) => setCompareFile('A', file));
-wireDropzone(dropzoneB, fileInputB, (file) => setCompareFile('B', file));
+wireDropzone(dropzone, fileInput, handleIncomingFiles);
+wireDropzone(dropzoneA, fileInputA, (files) => setCompareFile('A', files[0]));
+wireDropzone(dropzoneB, fileInputB, (files) => setCompareFile('B', files[0]));
 
 async function runConversion(file, category, format, scale, level) {
   if (isCompressing()) {
@@ -794,6 +844,144 @@ async function runConvertOrCompress() {
     .catch(() => {});
 }
 
+function hideBatchResults() {
+  batchResultsSection.hidden = true;
+  batchResultsList.innerHTML = '';
+  downloadZipBtn.hidden = true;
+  downloadZipBtn.onclick = null;
+}
+
+/**
+ * Affiche la liste des résultats du traitement par lot : un élément par fichier, avec son
+ * propre bouton "Télécharger" (l'utilisateur choisit un par un, ou tout d'un coup via le
+ * ZIP — jamais un téléchargement automatique groupé, qui déclencherait l'anti-popup du
+ * navigateur sur plusieurs fichiers à la fois). Les échecs restent dans la liste (barrés,
+ * message d'erreur) plutôt que d'être passés sous silence.
+ */
+function renderBatchResults(results) {
+  batchResultsList.innerHTML = '';
+  const successes = results.filter((r) => !r.error);
+  batchCount.textContent = `${successes.length}/${results.length} réussi${successes.length > 1 ? 's' : ''}`;
+
+  for (const r of results) {
+    const li = document.createElement('li');
+    li.className = 'batch-result-item' + (r.error ? ' is-error' : '');
+
+    const info = document.createElement('div');
+    info.className = 'batch-result-info';
+    const name = document.createElement('p');
+    name.className = 'batch-result-name';
+    name.textContent = r.error ? r.sourceName : r.name;
+    const meta = document.createElement('p');
+    meta.className = 'batch-result-meta';
+    meta.textContent = r.error
+      ? r.error
+      : r.originalSize
+        ? `${formatBytes(r.originalSize)} → ${formatBytes(r.blob.size)}`
+        : formatBytes(r.blob.size);
+    info.append(name, meta);
+    li.appendChild(info);
+
+    if (!r.error) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-ghost btn-small';
+      btn.textContent = 'Télécharger';
+      btn.addEventListener('click', () => downloadBlob(r.blob, r.name));
+      li.appendChild(btn);
+    }
+
+    batchResultsList.appendChild(li);
+  }
+
+  downloadZipBtn.hidden = successes.length === 0;
+  downloadZipBtn.onclick = successes.length
+    ? async () => {
+        downloadZipBtn.disabled = true;
+        try {
+          const zipBlob = await createZipBlob(successes.map((r) => ({ name: r.name, blob: r.blob })));
+          downloadBlob(zipBlob, 'anyform.zip');
+        } catch (err) {
+          setStatus(err.message || "Échec de la création de l'archive ZIP.", 'error');
+        } finally {
+          downloadZipBtn.disabled = false;
+        }
+      }
+    : null;
+
+  batchResultsSection.hidden = false;
+}
+
+/**
+ * Traite plusieurs fichiers à la suite (Convertisseur/Compresseur). Contrairement au
+ * chemin à un seul fichier, chaque échec est capturé et affiché dans son propre élément
+ * de la liste plutôt que d'interrompre le lot — un fichier au mauvais format ne doit pas
+ * empêcher les autres d'être traités (même logique que le CLI, fichier par fichier).
+ */
+async function runBatchConvertOrCompress() {
+  const category = currentCategory();
+  const compressing = isCompressing();
+  const scale = parseInt(scaleSelect.value, 10);
+  const level = compressionLevelSelect.value;
+  const files = selectedFiles;
+
+  if (
+    (category === 'audio' || category === 'video') &&
+    typeof Notification !== 'undefined' &&
+    Notification.permission === 'default'
+  ) {
+    Notification.requestPermission().catch(() => {});
+  }
+
+  hideBatchResults();
+
+  const results = [];
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    setStatus(`${compressing ? 'Compression' : 'Conversion'} ${i + 1}/${files.length} : ${file.name}`);
+    const format = compressing ? extensionOf(file) : formatSelect.value;
+    const originalSize = file.size;
+
+    try {
+      assertFileMatchesMode(file, category, compressing);
+      const blob = await runConversion(file, category, format, scale, level);
+      const baseName = file.name.replace(/\.[^.]+$/, '');
+      const outName = compressing ? `${baseName}-compresse.${format}` : `${baseName}.${format}`;
+      results.push({ sourceName: file.name, name: outName, blob, originalSize: compressing ? originalSize : null, error: null });
+    } catch (err) {
+      results.push({ sourceName: file.name, error: err.message || 'Échec.' });
+    }
+  }
+
+  setStatus('');
+  renderBatchResults(results);
+
+  const successes = results.filter((r) => !r.error);
+  if (
+    successes.length &&
+    (category === 'audio' || category === 'video') &&
+    typeof Notification !== 'undefined' &&
+    Notification.permission === 'granted' &&
+    document.hidden
+  ) {
+    new Notification('Anyform', {
+      body: `${compressing ? 'Compression' : 'Conversion'} terminée : ${successes.length}/${results.length} fichiers`,
+    });
+  }
+
+  for (const r of successes) {
+    addHistoryEntry({
+      name: r.name,
+      blob: r.blob,
+      mode: compressing ? 'compress' : 'convert',
+      category,
+      originalSize: r.originalSize,
+    })
+      .then(renderHistory)
+      .catch(() => {});
+  }
+}
+
 async function runInspect() {
   setStatus('Analyse en cours…');
   const category = categoryOfExt(extensionOf(selectedInspectFile));
@@ -821,6 +1009,7 @@ convertBtn.addEventListener('click', async () => {
   try {
     if (isInspectMode()) await runInspect();
     else if (isCompareMode()) await runCompare();
+    else if (selectedFiles.length > 1) await runBatchConvertOrCompress();
     else await runConvertOrCompress();
   } catch (err) {
     const fallback = isInspectMode()
