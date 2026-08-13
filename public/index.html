@@ -29,10 +29,12 @@
       <div id="modeTabs" class="tabs mode-tabs" role="tablist" aria-label="Mode">
         <button type="button" class="tab is-active" data-mode="convert" role="tab" aria-selected="true">Convertisseur</button>
         <button type="button" class="tab" data-mode="compress" role="tab" aria-selected="false">Compresseur</button>
+        <button type="button" class="tab" data-mode="inspect" role="tab" aria-selected="false">Inspecteur</button>
+        <button type="button" class="tab" data-mode="compare" role="tab" aria-selected="false">Comparateur</button>
       </div>
     </div>
 
-    <div class="field">
+    <div id="categoryField" class="field">
       <span class="field-label">Type de fichier</span>
       <div id="categoryTabs" class="tabs" role="tablist" aria-label="Type de fichier">
         <button type="button" class="tab is-active" data-category="image" role="tab" aria-selected="true">
@@ -103,6 +105,21 @@
       <p id="fileName" class="filename"></p>
     </div>
 
+    <div id="compareDropzones" class="compare-dropzones" hidden>
+      <div id="dropzoneA" class="dropzone" tabindex="0" role="button" aria-label="Choisir le premier fichier">
+        <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /><path d="M12 12v9" /><path d="m16 16-4-4-4 4" /></svg>
+        <p class="dropzone-text">Fichier A</p>
+        <input id="fileInputA" type="file" hidden />
+        <p id="fileNameA" class="filename"></p>
+      </div>
+      <div id="dropzoneB" class="dropzone" tabindex="0" role="button" aria-label="Choisir le second fichier">
+        <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /><path d="M12 12v9" /><path d="m16 16-4-4-4 4" /></svg>
+        <p class="dropzone-text">Fichier B</p>
+        <input id="fileInputB" type="file" hidden />
+        <p id="fileNameB" class="filename"></p>
+      </div>
+    </div>
+
     <div id="previewRow" class="preview-row" hidden>
       <div class="preview-box">
         <span class="preview-label">Original</span>
@@ -151,6 +168,12 @@
       </div>
     </div>
 
+    <div id="inspectResult" class="inspect-result" hidden>
+      <dl id="inspectList" class="inspect-list"></dl>
+    </div>
+
+    <div id="compareResult" class="compare-result" hidden></div>
+
     <div id="historySection" class="history-section" hidden>
       <div class="history-header">
         <span class="field-label">Historique récent</span>
@@ -177,6 +200,8 @@
   <script src="compress.js?v=__BUILD_ID__"></script>
   <script src="subtitles.js?v=__BUILD_ID__"></script>
   <script src="history.js?v=__BUILD_ID__"></script>
+  <script src="inspect.js?v=__BUILD_ID__"></script>
+  <script src="compare.js?v=__BUILD_ID__"></script>
   <script src="app.js?v=__BUILD_ID__"></script>
 </body>
 </html>
