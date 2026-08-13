@@ -56,9 +56,27 @@ version dans leur nom (`Anyform-1.0.7-win-x64.exe`, etc.), la plus récente éta
 **(version publiée − 10)** est supprimée automatiquement (ex. en publiant 1.0.50, tout ce
 qui est sous 1.0.40 disparaît) — ça revient à toujours garder les 10 dernières, sans dépendre
 d'un décompte fixe. Les fichiers sont aussi disponibles 30 jours dans les **Artifacts** du
-run pour du débogage rapide. Les builds
-ne sont pas signés (pas de certificat) : Windows SmartScreen et macOS Gatekeeper afficheront
-un avertissement au premier lancement.
+run pour du débogage rapide.
+
+### Builds non signés : à quoi s'attendre
+
+Pas de certificat de signature (payant) sur ces builds — deux conséquences différentes selon
+l'OS :
+
+- **Windows** : SmartScreen affiche "Windows a protégé votre ordinateur" au premier
+  lancement. Cliquer **Informations complémentaires → Exécuter quand même** suffit.
+- **macOS** : le message est plus trompeur. Comme l'app n'est ni signée ni notariée, macOS
+  affiche **"« Anyform » est endommagé et ne peut pas être ouvert"** — l'app n'est pas
+  vraiment corrompue, c'est juste le message que montrent les versions récentes de macOS
+  pour tout logiciel non signé téléchargé depuis internet (au lieu du classique
+  "développeur non identifié" avec un bouton "Ouvrir quand même"). Il faut retirer
+  manuellement l'attribut de quarantaine dans le Terminal :
+
+  ```bash
+  xattr -cr /Applications/Anyform.app
+  ```
+
+  (adapter le chemin si l'app est ailleurs). Pas besoin de `sudo` pour sa propre installation.
 
 ## Mise à jour automatique
 
