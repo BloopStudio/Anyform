@@ -89,17 +89,30 @@ async function heicToPngBlob(file) {
 }
 
 /**
+ * Calcule automatiquement un facteur d'agrandissement pour rasteriser un SVG (format
+ * vectoriel sans résolution propre) : vise une plus grande dimension autour de 1024px pour
+ * un rendu net, sans exploser la taille du fichier sur une petite icône (borné à 8x) ni
+ * réduire un gros visuel déjà grand (borné à 1x minimum).
+ */
+function autoSvgScale(width, height) {
+  const TARGET = 1024;
+  const raw = TARGET / Math.max(width || TARGET, height || TARGET);
+  return Math.min(8, Math.max(1, raw));
+}
+
+/**
  * Dessine une image source (SVG, HEIC ou raster) sur un canvas et retourne un blob dans le
  * format cible.
  */
-async function rasterize(file, targetFormat, { scale = 2, quality = 0.9 } = {}) {
+async function rasterize(file, targetFormat, { quality = 0.9 } = {}) {
   const svg = isSvgFile(file);
   const sourceBlob = isHeicFile(file) ? await heicToPngBlob(file) : file;
   const dataUrl = await readFileAsDataUrl(sourceBlob);
   const img = await loadImage(dataUrl);
 
-  const width = Math.max(1, Math.round((img.naturalWidth || 300) * (svg ? scale : 1)));
-  const height = Math.max(1, Math.round((img.naturalHeight || 300) * (svg ? scale : 1)));
+  const scale = svg ? autoSvgScale(img.naturalWidth, img.naturalHeight) : 1;
+  const width = Math.max(1, Math.round((img.naturalWidth || 300) * scale));
+  const height = Math.max(1, Math.round((img.naturalHeight || 300) * scale));
 
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -165,7 +178,7 @@ function traceToSvg(file) {
  * Convertit un fichier vers le format cible et retourne un Blob prêt à télécharger.
  * @param {File} file
  * @param {'png'|'jpg'|'webp'|'avif'|'ico'|'tiff'|'svg'} targetFormat
- * @param {{scale?: number, quality?: number}} options
+ * @param {{quality?: number}} options
  */
 async function convertFile(file, targetFormat, options = {}) {
   if (targetFormat === 'svg') {
