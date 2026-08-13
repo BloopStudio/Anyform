@@ -5,6 +5,7 @@
   "main": "main.js",
   "author": "BloopStudio",
   "license": "MIT",
+  "desktopName": "Anyform.desktop",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --publish never"
@@ -44,7 +45,8 @@
     "linux": {
       "target": "AppImage",
       "category": "Utility",
-      "synopsis": "Convertisseur de formats (images, données, audio, vidéo)"
+      "synopsis": "Convertisseur de formats (images, données, audio, vidéo)",
+      "syncDesktopName": true
     },
     "nsis": {
       "oneClick": false,
