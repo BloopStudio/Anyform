@@ -20,20 +20,23 @@ externe, même pour la vidéo/l'audio (ffmpeg.wasm) ou le décodage HEIC.
 
 Il suffit d'ouvrir `public/index.html`, ou de visiter la page déployée sur GitHub Pages, de
 choisir le mode (**Convertisseur** ou **Compresseur**), le type de fichier (onglets
-Image/Données/Audio/Vidéo), déposer un fichier, choisir le format cible, et cliquer sur
-"Convertir". Une barre de progression suit les conversions audio/vidéo (moteur
+Image/Données/Audio/Vidéo/Sous-titres), déposer un fichier, choisir le format cible, et
+cliquer sur "Convertir". Une barre de progression suit les conversions audio/vidéo (moteur
 ffmpeg.wasm), et le résultat s'affiche dans une carte dédiée avec téléchargement et bouton
 pour recommencer. Le thème (clair/sombre) suit automatiquement les préférences de
-l'appareil.
+l'appareil. Si l'onglet n'est plus visible à la fin d'une conversion audio/vidéo, une
+notification native prévient (permission demandée au premier clic sur "Convertir").
 
 ### Deux modes
 
 - **Convertisseur** : change le format d'un fichier (formats ci-dessous).
 - **Compresseur** : réduit la taille d'un fichier **sans changer son format** — limité aux
   images (PNG, JPG, WebP, HEIC — GIF/BMP exclus, Canvas ne sait pas les ré-encoder dans le
-  navigateur) et vidéos, avec un niveau Léger/Moyen/Fort. Images : qualité réduite pour
-  JPG/WebP, redimensionnement pour PNG (pas de curseur de qualité). Vidéo : CRF réduit sur
-  le même codec/conteneur, audio inchangé. Voir `public/compress.js`.
+  navigateur), à l'audio et aux vidéos, avec un niveau Léger/Moyen/Fort. Images : qualité
+  réduite pour JPG/WebP, redimensionnement pour PNG (pas de curseur de qualité). Audio :
+  bitrate réduit pour les formats compressés, `-compression_level` pour FLAC (sans perte),
+  fréquence d'échantillonnage réduite pour WAV (PCM brut, pas de notion de bitrate). Vidéo :
+  CRF réduit sur le même codec/conteneur, audio inchangé. Voir `public/compress.js`.
 
 ### Formats supportés (Convertisseur)
 
@@ -44,8 +47,17 @@ l'appareil.
 - Vidéo : MP4, WebM, MOV, MKV, AVI, FLV, OGV en entrée ⇄ les mêmes + GIF animé en sortie
   (moteur ffmpeg.wasm)
 - Données : CSV ⇄ JSON ⇄ XLSX (SheetJS)
+- Sous-titres : SRT ⇄ VTT ⇄ ASS (texte pur, aucune dépendance) — l'ASS ne préserve que le
+  texte et le minutage, pas le style (police, couleur, position) : non représentable en
+  SRT/VTT, perdu dans les deux sens.
 
 D'autres formats (documents, archives...) pourront être ajoutés par la suite.
+
+### Historique local
+
+Les 5 derniers fichiers convertis/compressés restent accessibles (nom, taille, bouton
+"Télécharger") dans un encart sous le résultat — stockés dans IndexedDB, jamais envoyés
+nulle part, effaçables via "Vider". Voir `public/history.js`.
 
 ## Confidentialité
 
@@ -76,12 +88,14 @@ npx serve public
 ## Structure
 
 - `public/convert.js` — conversion d'images (Canvas API + ImageTracer.js + heic2any + UTIF.js)
-- `public/compress.js` — compression d'images/vidéos (même format en sortie)
+- `public/compress.js` — compression d'images/audio/vidéos (même format en sortie)
 - `public/data.js` — conversion de données (CSV/JSON/XLSX)
+- `public/subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
+- `public/history.js` — historique local des 5 derniers fichiers (IndexedDB)
 - `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
 - `public/audio.js` / `public/video.js` — conversion audio/vidéo (ffmpeg.wasm)
-- `public/app.js` — interface (onglets par type, formats, glisser-déposer, progression,
-  téléchargement)
+- `public/app.js` — interface (mode, onglets par type, formats, glisser-déposer,
+  progression, téléchargement, notifications, historique)
 - `public/privacy.html` — politique de confidentialité
 - `public/vendor/` — librairies vendorisées (ImageTracer.js, SheetJS, heic2any, UTIF.js,
   ffmpeg.wasm)

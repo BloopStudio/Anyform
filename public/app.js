@@ -32,6 +32,11 @@ const INPUT_FORMAT_OPTIONS = {
     { value: 'flv', label: 'FLV' },
     { value: 'ogv', label: 'OGV' },
   ],
+  subtitle: [
+    { value: 'srt', label: 'SRT' },
+    { value: 'vtt', label: 'VTT' },
+    { value: 'ass', label: 'ASS' },
+  ],
 };
 
 const OUTPUT_FORMAT_OPTIONS = {
@@ -69,10 +74,16 @@ const OUTPUT_FORMAT_OPTIONS = {
     { value: 'ogv', label: 'OGV' },
     { value: 'gif', label: 'GIF (animé)' },
   ],
+  subtitle: [
+    { value: 'srt', label: 'SRT' },
+    { value: 'vtt', label: 'VTT' },
+    { value: 'ass', label: 'ASS' },
+  ],
 };
 
 const COMPRESS_FORMATS = {
   image: ['png', 'jpg', 'webp', 'heic'],
+  audio: ['wav', 'mp3', 'ogg', 'm4a', 'flac', 'aac', 'wma', 'opus'],
   video: ['mp4', 'webm', 'mov', 'mkv', 'avi', 'flv', 'ogv'],
 };
 
@@ -102,6 +113,9 @@ const resultName = document.getElementById('resultName');
 const resultMeta = document.getElementById('resultMeta');
 const downloadBtn = document.getElementById('downloadBtn');
 const resetBtn = document.getElementById('resetBtn');
+const historySection = document.getElementById('historySection');
+const historyList = document.getElementById('historyList');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
 let selectedFile = null;
 let previewBeforeUrl = null;
@@ -182,6 +196,67 @@ function showResult(blob, fileName, originalSize = null) {
 
   resultCard.hidden = false;
 }
+
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function renderHistory(entries) {
+  historySection.hidden = entries.length === 0;
+  historyList.innerHTML = '';
+
+  for (const entry of entries) {
+    const li = document.createElement('li');
+    li.className = 'history-item';
+
+    const info = document.createElement('div');
+    info.className = 'history-info';
+    const name = document.createElement('p');
+    name.className = 'history-name';
+    name.textContent = entry.name;
+    const meta = document.createElement('p');
+    meta.className = 'history-meta';
+    meta.textContent = entry.originalSize
+      ? `${formatBytes(entry.originalSize)} → ${formatBytes(entry.size)}`
+      : formatBytes(entry.size);
+    info.append(name, meta);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-ghost btn-small';
+    btn.textContent = 'Télécharger';
+    btn.addEventListener('click', () => downloadBlob(entry.blob, entry.name));
+
+    li.append(info, btn);
+    historyList.appendChild(li);
+  }
+}
+
+// Les conversions audio/vidéo peuvent prendre du temps : si l'onglet n'est plus visible
+// à la fin, on prévient via une notification native plutôt que de compter sur l'utilisateur
+// pour revenir vérifier. La permission doit être demandée depuis un geste utilisateur
+// (le clic sur "Convertir"), pas au chargement de la page.
+function notifyIfHidden(category, compressing) {
+  if (category !== 'audio' && category !== 'video') return;
+  if (typeof Notification === 'undefined') return;
+  if (!document.hidden || Notification.permission !== 'granted') return;
+
+  const label = compressing ? 'Compression terminée' : 'Conversion terminée';
+  new Notification('Anyform', { body: `${label} : ${resultFileName}` });
+}
+
+clearHistoryBtn.addEventListener('click', () => {
+  clearHistory().then(() => renderHistory([]));
+});
+
+getHistoryEntries().then(renderHistory).catch(() => {});
 
 function setBusy(busy) {
   convertBtn.disabled = busy || !selectedFile;
@@ -383,6 +458,10 @@ dropzone.addEventListener('drop', (e) => {
 async function runConversion(file, category, format, scale, level) {
   if (isCompressing()) {
     if (category === 'image') return compressImage(file, level);
+    if (category === 'audio') {
+      showProgress('Chargement du moteur audio (une seule fois par session)…');
+      return compressAudio(file, level, (percent) => updateProgress(percent));
+    }
     if (category === 'video') {
       showProgress('Chargement du moteur vidéo (une seule fois par session)…');
       return compressVideo(file, level, (percent) => updateProgress(percent));
@@ -392,6 +471,7 @@ async function runConversion(file, category, format, scale, level) {
 
   if (category === 'image') return convertFile(file, format, { scale });
   if (category === 'data') return convertData(file, format);
+  if (category === 'subtitle') return convertSubtitle(file, format);
   if (category === 'audio') {
     showProgress('Chargement du moteur audio (une seule fois par session)…');
     return convertAudio(file, format, (percent) => updateProgress(percent));
@@ -413,6 +493,14 @@ convertBtn.addEventListener('click', async () => {
   const level = compressionLevelSelect.value;
   const originalSize = selectedFile.size;
 
+  if (
+    (category === 'audio' || category === 'video') &&
+    typeof Notification !== 'undefined' &&
+    Notification.permission === 'default'
+  ) {
+    Notification.requestPermission().catch(() => {});
+  }
+
   hideResult();
   setBusy(true);
   setStatus(compressing ? 'Compression en cours…' : 'Conversion en cours…');
@@ -429,17 +517,21 @@ convertBtn.addEventListener('click', async () => {
     const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
     const outName = compressing ? `${baseName}-compresse.${format}` : `${baseName}.${format}`;
 
-    const a = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    a.href = url;
-    a.download = outName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, outName);
 
     setStatus('');
     showResult(blob, outName, compressing ? originalSize : null);
+    notifyIfHidden(category, compressing);
+
+    addHistoryEntry({
+      name: outName,
+      blob,
+      mode: compressing ? 'compress' : 'convert',
+      category,
+      originalSize: compressing ? originalSize : null,
+    })
+      .then(renderHistory)
+      .catch(() => {});
   } catch (err) {
     setStatus(err.message || (compressing ? 'Échec de la compression.' : 'Échec de la conversion.'), 'error');
   } finally {
@@ -450,12 +542,7 @@ convertBtn.addEventListener('click', async () => {
 
 downloadBtn.addEventListener('click', () => {
   if (!resultUrl) return;
-  const a = document.createElement('a');
-  a.href = resultUrl;
-  a.download = resultFileName;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  downloadBlob(resultBlob, resultFileName);
 });
 
 resetBtn.addEventListener('click', () => {
