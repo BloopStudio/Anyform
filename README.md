@@ -21,12 +21,24 @@ externe, même pour la vidéo/l'audio (ffmpeg.wasm) ou le décodage HEIC.
 Il suffit d'ouvrir `public/index.html`, ou de visiter la page déployée sur GitHub Pages, de
 choisir le mode (**Convertisseur**, **Compresseur**, **Inspecteur** ou **Comparateur**), le
 type de fichier (onglets Image/Données/Audio/Vidéo/Sous-titres, quand le mode en a besoin),
-déposer un fichier, choisir le format cible, et cliquer sur "Convertir". Une barre de
-progression suit les conversions audio/vidéo (moteur ffmpeg.wasm), et le résultat s'affiche
-dans une carte dédiée avec téléchargement et bouton pour recommencer. Le thème
-(clair/sombre) suit automatiquement les préférences de l'appareil. Si l'onglet n'est plus
-visible à la fin d'une conversion audio/vidéo, une notification native prévient (permission
-demandée au premier clic sur "Convertir").
+déposer un ou plusieurs fichiers, choisir le format cible, et cliquer sur "Convertir". Une
+barre de progression suit les conversions audio/vidéo (moteur ffmpeg.wasm), et le résultat
+s'affiche dans une carte dédiée avec téléchargement et bouton pour recommencer. Le thème
+(clair/sombre) suit automatiquement les préférences de l'appareil et de la taille de la
+fenêtre. Si l'onglet n'est plus visible à la fin d'une conversion audio/vidéo, une
+notification native prévient (permission demandée au premier clic sur "Convertir").
+
+### Traitement par lot
+
+En Convertisseur/Compresseur, déposer plusieurs fichiers à la fois affiche une liste de
+résultats — chacun avec son propre bouton "Télécharger" (aucun téléchargement automatique
+groupé, qui déclencherait l'anti-popup du navigateur), plus un bouton "Tout (.zip)" pour
+tout récupérer en une seule archive. Les échecs individuels (mauvais format, fichier
+corrompu...) restent dans la liste avec leur erreur plutôt que d'interrompre le lot. Le ZIP
+est généré en pur JavaScript (méthode "stored", pas de compression — inutile, les fichiers
+produits par Anyform sont déjà dans leur format final) — voir `public/zip.js`. Un seul
+fichier déposé garde le comportement d'origine (téléchargement automatique + carte
+résultat).
 
 ### Quatre modes
 
@@ -109,6 +121,7 @@ npx serve public
 - `public/history.js` — historique local des 5 derniers fichiers (IndexedDB)
 - `public/inspect.js` — lecture des propriétés d'un fichier, sans le modifier
 - `public/compare.js` — diff entre deux fichiers (image, texte ligne à ligne, ou empreinte)
+- `public/zip.js` — génération d'archives ZIP pour le traitement par lot
 - `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
 - `public/audio.js` / `public/video.js` — conversion audio/vidéo (ffmpeg.wasm)
 - `public/app.js` — interface (mode, onglets par type, formats, glisser-déposer,
