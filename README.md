@@ -37,3 +37,13 @@ installation, ouvre directement dans le navigateur.
 
 Aucune collecte de données, traitement 100% local. Détails :
 [politique de confidentialité](https://thedemon78.github.io/Anyform/privacy.html).
+
+## Documentation
+
+Le [wiki](https://github.com/TheDEMON78/Anyform/wiki) détaille chaque forme d'Anyform,
+l'architecture du dépôt et les pipelines CI/CD.
+
+## Contribuer
+
+Voir [CONTRIBUTING.md](CONTRIBUTING.md) (modèle de branches, comment proposer une PR) et
+le [code de conduite](CODE_OF_CONDUCT.md). Projet sous licence [MIT](LICENSE).
