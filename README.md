@@ -56,7 +56,19 @@ aussi disponibles 30 jours dans les **Artifacts** du run pour du débogage rapid
 ne sont pas signés (pas de certificat) : Windows SmartScreen et macOS Gatekeeper afficheront
 un avertissement au premier lancement.
 
-## Formats supportés
+## Deux modes : Convertisseur et Compresseur
+
+Un onglet en haut de l'interface bascule entre les deux :
+
+- **Convertisseur** : change le format d'un fichier (formats ci-dessous).
+- **Compresseur** : réduit la taille d'un fichier **sans changer son format**. Limité aux
+  images (qualité réduite pour JPG/WebP, redimensionnement pour PNG/GIF/BMP) et aux
+  vidéos (CRF réduit sur le même codec/conteneur, audio inchangé), avec un niveau
+  Léger/Moyen/Fort. Voir `public/compress.js`.
+
+Le thème (clair/sombre) suit automatiquement les préférences de l'appareil.
+
+## Formats supportés (Convertisseur)
 
 - Images : SVG, PNG, JPG, WebP, GIF, BMP, HEIC en entrée ⇄ PNG/JPG/WebP/AVIF/ICO/TIFF/SVG en
   sortie (vectorisation raster → SVG incluse via ImageTracer.js, décodage HEIC via
@@ -73,10 +85,11 @@ un avertissement au premier lancement.
 - `build/license.txt`, `build/installer-*.bmp`, `build/dmg-background.png` — ressources de
   personnalisation des installateurs (voir plus haut)
 - `public/convert.js` — conversion d'images (Canvas API + ImageTracer.js + heic2any + UTIF.js)
+- `public/compress.js` — compression d'images/vidéos (même format en sortie)
 - `public/data.js` — conversion de données (CSV/JSON/XLSX)
 - `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
 - `public/audio.js` / `public/video.js` — conversion audio/vidéo (ffmpeg.wasm)
-- `public/app.js` — interface (onglets par type, formats, glisser-déposer, progression,
-  téléchargement)
+- `public/app.js` — interface (mode, onglets par type, formats, glisser-déposer,
+  progression, téléchargement)
 - `public/vendor/` — librairies vendorisées (ImageTracer.js, SheetJS, heic2any, UTIF.js,
   ffmpeg.wasm)
