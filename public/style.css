@@ -34,7 +34,18 @@ body {
   min-height: 100vh;
   display: flex;
   align-items: center;
+  /* Filet de sécurité pour les navigateurs qui comprennent "safe center" (Chrome/Firefox
+     récents) : sur une fenêtre large mais peu haute, la carte peut devenir plus grande que
+     le viewport (plus de contenu visible qu'avant : 4 onglets de mode, deux dropzones en
+     Comparateur...). "align-items: center" pur pousse alors le haut de la carte hors
+     champ à parts égales avec le bas — la carte apparaît "collée" en haut avec tout
+     l'espace en trop en dessous, sans pouvoir scroller vers le haut au-delà.
+     "safe center" retombe sur un alignement au début (haut) dès que ça déborde, donc la
+     carte reste entièrement visible dès le chargement. Les navigateurs qui ne
+     reconnaissent pas cette valeur ignorent la ligne et gardent le "center" ci-dessus. */
+  align-items: safe center;
   justify-content: center;
+  padding: 24px 16px;
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
