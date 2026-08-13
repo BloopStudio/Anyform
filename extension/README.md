@@ -21,8 +21,8 @@ entrée, + AVIF/ICO/TIFF en sortie), données (CSV/JSON/XLSX), audio
 sortie), via le moteur ffmpeg.wasm vendorisé localement.
 
 **Compresseur** — réduit la taille d'un fichier sans changer son format, limité aux images
-et vidéos (voir `compress.js` : qualité réduite pour JPG/WebP, redimensionnement pour
-PNG/GIF/BMP, CRF réduit pour la vidéo sur le même codec/conteneur).
+(PNG/JPG/WebP/HEIC) et vidéos (voir `compress.js` : qualité réduite pour JPG/WebP,
+redimensionnement pour PNG, CRF réduit pour la vidéo sur le même codec/conteneur).
 
 **Note CSP (Manifest V3)** : les Workers d'une extension n'héritent pas automatiquement de
 la permission `wasm-unsafe-eval` de la page qui les crée — nécessaire pour que

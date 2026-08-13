@@ -72,7 +72,7 @@ const OUTPUT_FORMAT_OPTIONS = {
 };
 
 const COMPRESS_FORMATS = {
-  image: ['png', 'jpg', 'webp', 'gif', 'bmp', 'heic'],
+  image: ['png', 'jpg', 'webp', 'heic'],
   video: ['mp4', 'webm', 'mov', 'mkv', 'avi', 'flv', 'ogv'],
 };
 
