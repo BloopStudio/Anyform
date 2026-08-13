@@ -439,6 +439,7 @@ select:disabled { opacity: 0.5; cursor: not-allowed; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+  margin-top: 18px;
 }
 
 .compare-dropzones[hidden] { display: none; }
