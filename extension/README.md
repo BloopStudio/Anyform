@@ -6,8 +6,9 @@ locale (rien n'est envoyé sur internet).
 
 ## Fonctionnalités
 
-- **Popup** (icône de la barre d'outils) : même interface que l'app web — deux modes,
-  **Convertisseur** et **Compresseur**, sélectionnables via un onglet en haut.
+- **Popup** (icône de la barre d'outils) : même interface que l'app web — quatre modes,
+  **Convertisseur**, **Compresseur**, **Inspecteur** et **Comparateur**, sélectionnables
+  via un onglet en haut.
 - **Menu contextuel** : clic droit sur une image dans une page → "Convertir cette image
   avec Anyform" → l'image s'ouvre dans un nouvel onglet avec le popup pré-rempli, il ne
   reste qu'à choisir le format de sortie.
@@ -28,6 +29,15 @@ pur — voir `subtitles.js`).
 JPG/WebP, redimensionnement pour PNG ; bitrate réduit pour l'audio compressé,
 `-compression_level` pour FLAC, fréquence d'échantillonnage réduite pour WAV ; CRF réduit
 pour la vidéo sur le même codec/conteneur).
+
+**Inspecteur** — lit les propriétés d'un fichier (dimensions, durée, lignes/colonnes,
+nombre de sous-titres...) sans le modifier. Catégorie déduite de l'extension déposée, pas
+d'onglet Type de fichier à pré-choisir. Voir `inspect.js`.
+
+**Comparateur** — seul mode à deux entrées (fichier A / fichier B). Images → diff pixel par
+pixel téléchargeable (zones qui changent en rouge). Données/sous-titres → diff ligne à
+ligne (LCS, façon `git diff`), repli sur empreinte SHA-256 au-delà de 3000 lignes. Reste
+(audio/vidéo/xlsx) → empreinte SHA-256 uniquement. Voir `compare.js`.
 
 **Pas de notification native** (contrairement au web/à l'app de bureau) : le popup se ferme
 dès qu'on clique ailleurs, donc `document.hidden` ne devient jamais vrai pendant qu'une
@@ -63,6 +73,8 @@ déclare donc explicitement `content_security_policy.extension_pages` avec
 - `compress.js` — compression d'images/audio/vidéos (même format en sortie)
 - `subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
 - `history.js` — historique local des 5 derniers fichiers (IndexedDB)
+- `inspect.js` — lecture des propriétés d'un fichier, sans le modifier
+- `compare.js` — diff entre deux fichiers (image, texte ligne à ligne, ou empreinte)
 - `ffmpeg-engine.js` / `audio.js` / `video.js` — conversion audio/vidéo (ffmpeg.wasm,
   chargé via `chrome.runtime.getURL()` plutôt que des blob URLs, bloquées par la CSP)
 - `vendor/` — librairies vendorisées (ImageTracer.js, SheetJS, heic2any, UTIF.js,
