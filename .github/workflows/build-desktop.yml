@@ -125,15 +125,25 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PREV_TAG=$(gh release list --repo "${{ github.repository }}" --limit 1 --json tagName --jq '.[0].tagName' || true)
+          MAX_ENTRIES=25
 
           {
             echo "## Ce qui a changé"
             echo
 
             if [ -n "$PREV_TAG" ] && git rev-parse "$PREV_TAG" >/dev/null 2>&1; then
-              git log "${PREV_TAG}..HEAD" --no-merges --pretty=format:'- %s (%h)' \
-                | grep -v '^- chore: bump version' \
-                || echo "- Corrections et ajustements mineurs."
+              COMMITS=$(git log "${PREV_TAG}..HEAD" --no-merges --pretty=format:'- %s (%h)' \
+                | grep -v '^- chore: bump version' || true)
+
+              if [ -z "$COMMITS" ]; then
+                echo "- Corrections et ajustements mineurs."
+              else
+                TOTAL=$(echo "$COMMITS" | wc -l)
+                echo "$COMMITS" | head -n "$MAX_ENTRIES"
+                if [ "$TOTAL" -gt "$MAX_ENTRIES" ]; then
+                  echo "- … et $((TOTAL - MAX_ENTRIES)) autre(s) commit(s) (voir l'historique complet)."
+                fi
+              fi
             else
               echo "- Première release publiée automatiquement."
             fi
