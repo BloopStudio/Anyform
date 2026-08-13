@@ -3,10 +3,16 @@
 const fs = require('fs');
 const path = require('path');
 const { Command } = require('commander');
-const { convertImage, SUPPORTED_OUTPUT_FORMATS: IMAGE_FORMATS } = require('../lib/convert');
+const {
+  convertImage,
+  compressImage,
+  SUPPORTED_OUTPUT_FORMATS: IMAGE_FORMATS,
+  COMPRESSIBLE_IMAGE_FORMATS,
+} = require('../lib/convert');
 const { convertData, SUPPORTED_DATA_FORMATS: DATA_FORMATS } = require('../lib/data');
 const {
   convertMedia,
+  compressVideo,
   SUPPORTED_AUDIO_FORMATS: AUDIO_FORMATS,
   SUPPORTED_VIDEO_FORMATS: VIDEO_FORMATS,
 } = require('../lib/media');
@@ -70,7 +76,36 @@ async function convertOne(filePath, target, options) {
   return outPath;
 }
 
+/**
+ * Compresse un fichier image ou vidéo en conservant son format d'origine.
+ */
+async function compressOne(filePath, level, options) {
+  const category = detectCategory(filePath);
+  if (category !== 'image' && category !== 'video') {
+    throw new Error(`Compression non supportée pour ce type de fichier : ${filePath}`);
+  }
+
+  const outDir = options.outDir || path.dirname(filePath);
+  fs.mkdirSync(outDir, { recursive: true });
+  const baseName = path.parse(filePath).name;
+
+  if (category === 'image') {
+    const sourceExt = normalizeExt(path.extname(filePath).slice(1).toLowerCase());
+    const inputBuffer = fs.readFileSync(filePath);
+    const result = await compressImage(inputBuffer, sourceExt, level);
+    const outPath = path.join(outDir, `${baseName}-compresse.${result.ext}`);
+    fs.writeFileSync(outPath, result.buffer);
+    return outPath;
+  }
+
+  const ext = normalizeExt(path.extname(filePath).slice(1).toLowerCase());
+  const outPath = path.join(outDir, `${baseName}-compresse.${ext}`);
+  await compressVideo(filePath, outPath, ext, level);
+  return outPath;
+}
+
 const ALL_FORMATS = [...new Set([...IMAGE_FORMATS, ...DATA_FORMATS, ...AUDIO_FORMATS, ...VIDEO_FORMATS])];
+const COMPRESS_FORMATS = [...new Set([...COMPRESSIBLE_IMAGE_FORMATS, ...VIDEO_FORMATS])];
 
 const { version } = require('../package.json');
 
@@ -84,17 +119,32 @@ program
       '(détection automatique du type selon l\'extension).'
   )
   .argument('<files...>', 'fichier(s) à convertir')
-  .requiredOption('-t, --to <format>', `format de sortie (${ALL_FORMATS.join(', ')})`)
+  .option('-t, --to <format>', `format de sortie (${ALL_FORMATS.join(', ')})`)
+  .option('-c, --compress', `compresser le(s) fichier(s) sans changer de format (${COMPRESS_FORMATS.join(', ')}), au lieu de convertir avec -t`)
+  .option('-l, --level <level>', 'niveau de compression : light, medium, strong', 'medium')
   .option('-o, --out-dir <dir>', 'dossier de sortie (par défaut : même dossier que le fichier source)')
   .option('-q, --quality <number>', 'qualité de compression pour jpg/webp/avif (1-100)', (v) => parseInt(v, 10))
   .option('-d, --density <number>', 'densité (DPI) utilisée pour rasteriser un SVG', (v) => parseInt(v, 10))
   .action(async (files, options) => {
+    if (!options.to && !options.compress) {
+      console.error('Erreur : précisez soit -t/--to <format> (conversion), soit -c/--compress (compression).');
+      process.exitCode = 1;
+      return;
+    }
+    if (options.to && options.compress) {
+      console.error('Erreur : -t/--to et -c/--compress sont incompatibles, choisissez l\'un ou l\'autre.');
+      process.exitCode = 1;
+      return;
+    }
+
     let hadError = false;
-    const target = options.to.toLowerCase().replace(/^\./, '');
+    const target = options.to ? options.to.toLowerCase().replace(/^\./, '') : null;
 
     for (const filePath of files) {
       try {
-        const outPath = await convertOne(filePath, target, options);
+        const outPath = options.compress
+          ? await compressOne(filePath, options.level, options)
+          : await convertOne(filePath, target, options);
         console.log(`✔ ${filePath} → ${outPath}`);
       } catch (err) {
         hadError = true;

@@ -18,6 +18,20 @@ automatiquement avec `npm install`, aucune install système requise).
 Le type de fichier (image/données/audio/vidéo) est détecté automatiquement à partir de
 l'extension.
 
+## Convertisseur et Compresseur
+
+En plus de la conversion (`-t/--to`), le CLI propose une compression sans changement de
+format (`-c/--compress`) pour réduire la taille des images et des vidéos :
+
+- Images compressibles : PNG, JPG, WebP, GIF (via `sharp`) — le HEIC/HEIF est décodé puis
+  compressé en PNG, comme sur les autres plateformes
+- Vidéos compressibles : MP4, WebM, MOV, MKV, AVI, FLV, OGV (via `ffmpeg`, codec/conteneur
+  d'origine conservé, audio non retouché)
+- Trois niveaux : `light`, `medium` (par défaut), `strong`
+
+Le fichier compressé est écrit à côté avec le suffixe `-compresse` (le format de sortie ne
+change jamais, sauf HEIC/HEIF → PNG).
+
 ## Installation
 
 ```bash
@@ -34,6 +48,8 @@ node bin/anyform.js photo.jpg -t svg
 node bin/anyform.js data.csv -t xlsx
 node bin/anyform.js musique.wav -t mp3
 node bin/anyform.js clip.mov -t mp4
+node bin/anyform.js photo.jpg -c -l strong
+node bin/anyform.js clip.mp4 --compress --level light -o ./out
 ```
 
 Ou, après `npm link` :
@@ -44,10 +60,14 @@ anyform image.svg -t png
 
 Options :
 
-- `-t, --to <format>` (obligatoire) — format de sortie
+- `-t, --to <format>` — format de sortie (incompatible avec `-c`)
+- `-c, --compress` — compresse le(s) fichier(s) sans changer de format (incompatible avec `-t`)
+- `-l, --level <level>` — niveau de compression : `light`, `medium` (par défaut), `strong`
 - `-o, --out-dir <dir>` — dossier de sortie (par défaut : à côté du fichier source)
-- `-q, --quality <number>` — qualité pour jpg/webp/avif
+- `-q, --quality <number>` — qualité pour jpg/webp/avif (conversion)
 - `-d, --density <number>` — DPI utilisé pour rasteriser un SVG en entrée
+
+Il faut préciser exactement l'une des deux options `-t` ou `-c`.
 
 ## Structure
 
