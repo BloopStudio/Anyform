@@ -12,6 +12,21 @@
   --danger: #ff6b6b;
 }
 
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --card-2: #eef0f3;
+    --border: #dde1e7;
+    --text: #16181d;
+    --muted: #656b78;
+    --accent: #4361ee;
+    --accent-2: #7c3aed;
+    --success: #16a34a;
+    --danger: #dc2626;
+  }
+}
+
 * { box-sizing: border-box; }
 
 body {
