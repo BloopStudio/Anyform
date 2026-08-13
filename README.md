@@ -30,10 +30,10 @@ l'appareil.
 
 - **Convertisseur** : change le format d'un fichier (formats ci-dessous).
 - **Compresseur** : réduit la taille d'un fichier **sans changer son format** — limité aux
-  images et vidéos, avec un niveau Léger/Moyen/Fort. Images : qualité réduite pour
-  JPG/WebP, redimensionnement pour PNG/GIF/BMP (pas de curseur de qualité pour ceux-là).
-  Vidéo : CRF réduit sur le même codec/conteneur, audio inchangé. Voir
-  `public/compress.js`.
+  images (PNG, JPG, WebP, HEIC — GIF/BMP exclus, Canvas ne sait pas les ré-encoder dans le
+  navigateur) et vidéos, avec un niveau Léger/Moyen/Fort. Images : qualité réduite pour
+  JPG/WebP, redimensionnement pour PNG (pas de curseur de qualité). Vidéo : CRF réduit sur
+  le même codec/conteneur, audio inchangé. Voir `public/compress.js`.
 
 ### Formats supportés (Convertisseur)
 
