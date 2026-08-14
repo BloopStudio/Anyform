@@ -39,47 +39,52 @@ const INPUT_FORMAT_OPTIONS = {
   ],
 };
 
-const OUTPUT_FORMAT_OPTIONS = {
-  image: [
-    { value: 'png', label: 'PNG' },
-    { value: 'jpg', label: 'JPG' },
-    { value: 'webp', label: 'WebP' },
-    { value: 'avif', label: 'AVIF' },
-    { value: 'ico', label: 'ICO' },
-    { value: 'tiff', label: 'TIFF' },
-    { value: 'svg', label: 'SVG (vectorisation)' },
-  ],
-  data: [
-    { value: 'csv', label: 'CSV' },
-    { value: 'json', label: 'JSON' },
-    { value: 'xlsx', label: 'XLSX' },
-  ],
-  audio: [
-    { value: 'wav', label: 'WAV' },
-    { value: 'mp3', label: 'MP3' },
-    { value: 'ogg', label: 'OGG' },
-    { value: 'm4a', label: 'M4A' },
-    { value: 'flac', label: 'FLAC' },
-    { value: 'aac', label: 'AAC' },
-    { value: 'wma', label: 'WMA' },
-    { value: 'opus', label: 'Opus' },
-  ],
-  video: [
-    { value: 'mp4', label: 'MP4' },
-    { value: 'webm', label: 'WebM' },
-    { value: 'mov', label: 'MOV' },
-    { value: 'mkv', label: 'MKV' },
-    { value: 'avi', label: 'AVI' },
-    { value: 'flv', label: 'FLV' },
-    { value: 'ogv', label: 'OGV' },
-    { value: 'gif', label: 'GIF (animé)' },
-  ],
-  subtitle: [
-    { value: 'srt', label: 'SRT' },
-    { value: 'vtt', label: 'VTT' },
-    { value: 'ass', label: 'ASS' },
-  ],
-};
+// Fonction plutôt que constante : les deux labels non-universels (SVG vectorisation, GIF
+// animé) doivent se retraduire à chaque appel, pas seulement au chargement de la page — un
+// changement de langue en cours de session doit aussi les mettre à jour.
+function getOutputFormatOptions() {
+  return {
+    image: [
+      { value: 'png', label: 'PNG' },
+      { value: 'jpg', label: 'JPG' },
+      { value: 'webp', label: 'WebP' },
+      { value: 'avif', label: 'AVIF' },
+      { value: 'ico', label: 'ICO' },
+      { value: 'tiff', label: 'TIFF' },
+      { value: 'svg', label: t('format.svgVector') },
+    ],
+    data: [
+      { value: 'csv', label: 'CSV' },
+      { value: 'json', label: 'JSON' },
+      { value: 'xlsx', label: 'XLSX' },
+    ],
+    audio: [
+      { value: 'wav', label: 'WAV' },
+      { value: 'mp3', label: 'MP3' },
+      { value: 'ogg', label: 'OGG' },
+      { value: 'm4a', label: 'M4A' },
+      { value: 'flac', label: 'FLAC' },
+      { value: 'aac', label: 'AAC' },
+      { value: 'wma', label: 'WMA' },
+      { value: 'opus', label: 'Opus' },
+    ],
+    video: [
+      { value: 'mp4', label: 'MP4' },
+      { value: 'webm', label: 'WebM' },
+      { value: 'mov', label: 'MOV' },
+      { value: 'mkv', label: 'MKV' },
+      { value: 'avi', label: 'AVI' },
+      { value: 'flv', label: 'FLV' },
+      { value: 'ogv', label: 'OGV' },
+      { value: 'gif', label: t('format.gifAnimated') },
+    ],
+    subtitle: [
+      { value: 'srt', label: 'SRT' },
+      { value: 'vtt', label: 'VTT' },
+      { value: 'ass', label: 'ASS' },
+    ],
+  };
+}
 
 const COMPRESS_FORMATS = {
   image: ['png', 'jpg', 'webp', 'heic'],
@@ -129,6 +134,8 @@ const batchResultsSection = document.getElementById('batchResultsSection');
 const batchCount = document.getElementById('batchCount');
 const batchResultsList = document.getElementById('batchResultsList');
 const downloadZipBtn = document.getElementById('downloadZipBtn');
+const langFrBtn = document.getElementById('langFr');
+const langEnBtn = document.getElementById('langEn');
 
 let selectedFile = null;
 // Fichiers du traitement par lot (Convertisseur/Compresseur, 2+ fichiers à la fois) —
@@ -174,11 +181,13 @@ function categoryOfExt(ext) {
   return null;
 }
 
+const BYTE_UNITS = { fr: ['o', 'Ko', 'Mo', 'Go'], en: ['B', 'KB', 'MB', 'GB'] };
+
 function formatBytes(bytes) {
-  if (bytes < 1024) return `${bytes} o`;
-  const units = ['Ko', 'Mo', 'Go'];
+  const units = BYTE_UNITS[getLanguage()] || BYTE_UNITS.fr;
+  if (bytes < 1024) return `${bytes} ${units[0]}`;
   let value = bytes / 1024;
-  let unitIndex = 0;
+  let unitIndex = 1;
   while (value >= 1024 && unitIndex < units.length - 1) {
     value /= 1024;
     unitIndex += 1;
@@ -228,8 +237,8 @@ function showResult(blob, fileName, originalSize = null) {
     const percent = Math.round(((originalSize - blob.size) / originalSize) * 100);
     resultMeta.textContent =
       percent > 0
-        ? `${formatBytes(originalSize)} → ${formatBytes(blob.size)} (-${percent}%)`
-        : `${formatBytes(originalSize)} → ${formatBytes(blob.size)} (déjà optimisé, pas de gain)`;
+        ? t('result.sizeChange', { before: formatBytes(originalSize), after: formatBytes(blob.size), percent })
+        : t('result.alreadyOptimized', { before: formatBytes(originalSize), after: formatBytes(blob.size) });
   } else {
     resultMeta.textContent = formatBytes(blob.size);
   }
@@ -271,7 +280,7 @@ function renderHistory(entries) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn-ghost btn-small';
-    btn.textContent = 'Télécharger';
+    btn.textContent = t('btn.download');
     btn.addEventListener('click', () => downloadBlob(entry.blob, entry.name));
 
     li.append(info, btn);
@@ -288,7 +297,7 @@ function notifyIfHidden(category, compressing) {
   if (typeof Notification === 'undefined') return;
   if (!document.hidden || Notification.permission !== 'granted') return;
 
-  const label = compressing ? 'Compression terminée' : 'Conversion terminée';
+  const label = t(compressing ? 'notify.compressionDone' : 'notify.conversionDone');
   new Notification('Anyform', { body: `${label} : ${resultFileName}` });
 }
 
@@ -358,7 +367,7 @@ function updateAcceptedFileType() {
 function refreshOutputOptions() {
   const category = currentCategory();
   const sourceExt = sourceFormatSelect.value;
-  const options = OUTPUT_FORMAT_OPTIONS[category].filter((opt) => opt.value !== sourceExt);
+  const options = getOutputFormatOptions()[category].filter((opt) => opt.value !== sourceExt);
   populateSelect(formatSelect, options, { preserveSelection: true });
 }
 
@@ -378,12 +387,12 @@ function onCategoryChange(category) {
   syncUiForCategory();
 }
 
-const MODE_LABELS = { convert: 'Convertir', compress: 'Compresser', inspect: 'Inspecter', compare: 'Comparer' };
+const MODE_LABEL_KEYS = { convert: 'mode.convert.btn', compress: 'mode.compress.btn', inspect: 'mode.inspect.btn', compare: 'mode.compare.btn' };
 
 function onModeChange(mode) {
   currentModeValue = mode;
   setActiveTab(modeTabs, 'mode', mode);
-  convertBtnLabel.textContent = MODE_LABELS[mode];
+  convertBtnLabel.textContent = t(MODE_LABEL_KEYS[mode]);
 
   const compressing = isCompressing();
   const inspecting = isInspectMode();
@@ -448,17 +457,13 @@ function assertFileMatchesMode(file, category, compressing) {
     const allowed = COMPRESS_FORMATS[category] || [];
     if (!allowed.includes(ext)) {
       throw new Error(
-        `Format .${ext || '?'} non pris en charge par le compresseur. Formats acceptés : ` +
-          `${allowed.map((f) => f.toUpperCase()).join(', ')}.`
+        t('error.formatNotSupportedCompress', { ext: ext || '?', allowed: allowed.map((f) => f.toUpperCase()).join(', ') })
       );
     }
   } else {
     const expectedExt = sourceFormatSelect.value;
     if (ext !== expectedExt) {
-      throw new Error(
-        `Ce fichier est un .${ext || '?'}, mais le format d'entrée sélectionné est .${expectedExt}. ` +
-          `Choisis le bon format d'entrée ou dépose un fichier .${expectedExt}.`
-      );
+      throw new Error(t('error.wrongInputFormat', { ext: ext || '?', expected: expectedExt }));
     }
   }
 }
@@ -527,7 +532,7 @@ function setFiles(files) {
   previewAfterUrl = null;
   previewRow.hidden = true;
 
-  fileNameEl.textContent = `${files.length} fichiers sélectionnés`;
+  fileNameEl.textContent = t('batch.filesSelected', { n: files.length, plural: files.length > 1 ? 's' : '' });
   setStatus('');
   updateConvertBtnEnabled();
 }
@@ -550,7 +555,7 @@ function setInspectFile(file) {
   if (!categoryOfExt(ext)) {
     selectedInspectFile = null;
     updateConvertBtnEnabled();
-    setStatus(`Format .${ext || '?'} non reconnu par Anyform.`, 'error');
+    setStatus(t('error.unrecognizedFormat', { ext: ext || '?' }), 'error');
     return;
   }
 
@@ -598,11 +603,11 @@ function updateCompareCategoryStatus() {
   const categoryB = categoryOfExt(extensionOf(selectedCompareFileB));
 
   if (!categoryA || !categoryB) {
-    setStatus('Un des deux fichiers a un format non reconnu par Anyform.', 'error');
+    setStatus(t('error.compareUnrecognizedType'), 'error');
     return;
   }
   if (categoryA !== categoryB) {
-    setStatus('Les deux fichiers doivent être du même type pour être comparés.', 'error');
+    setStatus(t('error.compareDifferentTypes'), 'error');
     return;
   }
   setStatus('');
@@ -627,14 +632,14 @@ function renderCompareResult(result) {
 
   if (result.type === 'image') {
     summary.textContent = result.identical
-      ? 'Images identiques.'
-      : `${result.percentIdentical}% des pixels identiques (zone commune).`;
+      ? t('compare.imagesIdentical')
+      : t('compare.percentIdentical', { percent: result.percentIdentical });
     compareResult.appendChild(summary);
 
     if (result.sizeMismatch) {
       const note = document.createElement('p');
       note.className = 'compare-note';
-      note.textContent = `Dimensions différentes : A = ${result.dimensionsA}, B = ${result.dimensionsB} — comparaison faite sur leur zone commune.`;
+      note.textContent = t('compare.dimensionsMismatch', { a: result.dimensionsA, b: result.dimensionsB });
       compareResult.appendChild(note);
     }
 
@@ -643,13 +648,13 @@ function renderCompareResult(result) {
     const img = document.createElement('img');
     img.className = 'compare-diff-image';
     img.src = compareDiffUrl;
-    img.alt = 'Différences en rouge sur fond gris';
+    img.alt = t('compare.diffImageAlt');
     compareResult.appendChild(img);
 
     const downloadDiffBtn = document.createElement('button');
     downloadDiffBtn.type = 'button';
     downloadDiffBtn.className = 'btn-secondary';
-    downloadDiffBtn.textContent = 'Télécharger la diff';
+    downloadDiffBtn.textContent = t('btn.downloadDiff');
     downloadDiffBtn.addEventListener('click', () => downloadBlob(result.diffBlob, 'diff.png'));
     compareResult.appendChild(downloadDiffBtn);
     return;
@@ -657,8 +662,8 @@ function renderCompareResult(result) {
 
   if (result.type === 'text') {
     summary.textContent = result.identical
-      ? 'Fichiers identiques.'
-      : `${result.added} ligne(s) ajoutée(s), ${result.removed} ligne(s) supprimée(s).`;
+      ? t('compare.filesIdentical')
+      : t('compare.linesChanged', { added: result.added, removed: result.removed });
     compareResult.appendChild(summary);
 
     const list = document.createElement('div');
@@ -676,23 +681,23 @@ function renderCompareResult(result) {
 
   // type === 'hash' : comparaison par empreinte SHA-256 uniquement (audio/vidéo/xlsx, ou
   // fichier texte trop volumineux pour une diff ligne à ligne détaillée).
-  summary.textContent = result.identical ? 'Fichiers identiques (même empreinte).' : 'Fichiers différents.';
+  summary.textContent = result.identical ? t('compare.hashIdentical') : t('compare.filesDifferent');
   compareResult.appendChild(summary);
 
   if (result.tooLarge) {
     const note = document.createElement('p');
     note.className = 'compare-note';
-    note.textContent = 'Fichier trop volumineux pour une diff ligne à ligne détaillée — comparaison par empreinte seulement.';
+    note.textContent = t('compare.tooLarge');
     compareResult.appendChild(note);
   }
 
   const details = document.createElement('p');
   details.className = 'compare-note';
-  details.textContent = `A : ${formatBytes(result.sizeA)} — SHA-256 ${result.hashA.slice(0, 16)}…`;
+  details.textContent = t('compare.sizeHash', { label: 'A', size: formatBytes(result.sizeA), hash: result.hashA.slice(0, 16) });
   compareResult.appendChild(details);
   const detailsB = document.createElement('p');
   detailsB.className = 'compare-note';
-  detailsB.textContent = `B : ${formatBytes(result.sizeB)} — SHA-256 ${result.hashB.slice(0, 16)}…`;
+  detailsB.textContent = t('compare.sizeHash', { label: 'B', size: formatBytes(result.sizeB), hash: result.hashB.slice(0, 16) });
   compareResult.appendChild(detailsB);
 }
 
@@ -768,28 +773,28 @@ async function runConversion(file, category, format, level) {
   if (isCompressing()) {
     if (category === 'image') return compressImage(file, level);
     if (category === 'audio') {
-      showProgress('Chargement du moteur audio (une seule fois par session)…');
+      showProgress(t('status.loadingAudioEngine'));
       return compressAudio(file, level, (percent) => updateProgress(percent));
     }
     if (category === 'video') {
-      showProgress('Chargement du moteur vidéo (une seule fois par session)…');
+      showProgress(t('status.loadingVideoEngine'));
       return compressVideo(file, level, (percent) => updateProgress(percent));
     }
-    throw new Error('Type de fichier non supporté par le compresseur.');
+    throw new Error(t('error.categoryNotSupportedCompress'));
   }
 
   if (category === 'image') return convertFile(file, format);
   if (category === 'data') return convertData(file, format);
   if (category === 'subtitle') return convertSubtitle(file, format);
   if (category === 'audio') {
-    showProgress('Chargement du moteur audio (une seule fois par session)…');
+    showProgress(t('status.loadingAudioEngine'));
     return convertAudio(file, format, (percent) => updateProgress(percent));
   }
   if (category === 'video') {
-    showProgress('Chargement du moteur vidéo (une seule fois par session)…');
+    showProgress(t('status.loadingVideoEngine'));
     return convertVideo(file, format, (percent) => updateProgress(percent));
   }
-  throw new Error('Type de fichier non supporté.');
+  throw new Error(t('error.categoryNotSupported'));
 }
 
 async function runConvertOrCompress() {
@@ -808,7 +813,7 @@ async function runConvertOrCompress() {
   }
 
   hideResult();
-  setStatus(compressing ? 'Compression en cours…' : 'Conversion en cours…');
+  setStatus(t(compressing ? 'status.compressing' : 'status.converting'));
 
   const blob = await runConversion(selectedFile, category, format, level);
 
@@ -855,7 +860,11 @@ function hideBatchResults() {
 function renderBatchResults(results) {
   batchResultsList.innerHTML = '';
   const successes = results.filter((r) => !r.error);
-  batchCount.textContent = `${successes.length}/${results.length} réussi${successes.length > 1 ? 's' : ''}`;
+  batchCount.textContent = t('batch.resultsCount', {
+    success: successes.length,
+    total: results.length,
+    plural: successes.length > 1 ? 's' : '',
+  });
 
   for (const r of results) {
     const li = document.createElement('li');
@@ -880,7 +889,7 @@ function renderBatchResults(results) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'btn-ghost btn-small';
-      btn.textContent = 'Télécharger';
+      btn.textContent = t('btn.download');
       btn.addEventListener('click', () => downloadBlob(r.blob, r.name));
       li.appendChild(btn);
     }
@@ -896,7 +905,7 @@ function renderBatchResults(results) {
           const zipBlob = await createZipBlob(successes.map((r) => ({ name: r.name, blob: r.blob })));
           downloadBlob(zipBlob, 'anyform.zip');
         } catch (err) {
-          setStatus(err.message || "Échec de la création de l'archive ZIP.", 'error');
+          setStatus(err.message || t('error.zipCreation'), 'error');
         } finally {
           downloadZipBtn.disabled = false;
         }
@@ -931,7 +940,7 @@ async function runBatchConvertOrCompress() {
   const results = [];
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    setStatus(`${compressing ? 'Compression' : 'Conversion'} ${i + 1}/${files.length} : ${file.name}`);
+    setStatus(t(compressing ? 'batch.progressCompress' : 'batch.progressConvert', { i: i + 1, n: files.length, name: file.name }));
     const format = compressing ? extensionOf(file) : formatSelect.value;
     const originalSize = file.size;
 
@@ -942,7 +951,7 @@ async function runBatchConvertOrCompress() {
       const outName = compressing ? `${baseName}-compresse.${format}` : `${baseName}.${format}`;
       results.push({ sourceName: file.name, name: outName, blob, originalSize: compressing ? originalSize : null, error: null });
     } catch (err) {
-      results.push({ sourceName: file.name, error: err.message || 'Échec.' });
+      results.push({ sourceName: file.name, error: err.message || t('error.generic') });
     }
   }
 
@@ -958,7 +967,10 @@ async function runBatchConvertOrCompress() {
     document.hidden
   ) {
     new Notification('Anyform', {
-      body: `${compressing ? 'Compression' : 'Conversion'} terminée : ${successes.length}/${results.length} fichiers`,
+      body: t(compressing ? 'notify.batchCompressionDone' : 'notify.batchConversionDone', {
+        success: successes.length,
+        total: results.length,
+      }),
     });
   }
 
@@ -976,7 +988,7 @@ async function runBatchConvertOrCompress() {
 }
 
 async function runInspect() {
-  setStatus('Analyse en cours…');
+  setStatus(t('status.analyzing'));
   const category = categoryOfExt(extensionOf(selectedInspectFile));
   const items = await inspectFile(selectedInspectFile, category);
   setStatus('');
@@ -987,9 +999,9 @@ async function runCompare() {
   const category = categoryOfExt(extensionOf(selectedCompareFileA));
   const categoryB = categoryOfExt(extensionOf(selectedCompareFileB));
   if (!category || category !== categoryB) {
-    throw new Error('Les deux fichiers doivent être du même type reconnu par Anyform pour être comparés.');
+    throw new Error(t('error.compareDifferentTypes'));
   }
-  setStatus('Comparaison en cours…');
+  setStatus(t('status.comparing'));
   const result = await compareFiles(selectedCompareFileA, selectedCompareFileB, category);
   setStatus('');
   renderCompareResult(result);
@@ -1005,13 +1017,15 @@ convertBtn.addEventListener('click', async () => {
     else if (selectedFiles.length > 1) await runBatchConvertOrCompress();
     else await runConvertOrCompress();
   } catch (err) {
-    const fallback = isInspectMode()
-      ? "Échec de l'inspection."
-      : isCompareMode()
-        ? 'Échec de la comparaison.'
-        : isCompressing()
-          ? 'Échec de la compression.'
-          : 'Échec de la conversion.';
+    const fallback = t(
+      isInspectMode()
+        ? 'error.inspectFailed'
+        : isCompareMode()
+          ? 'error.compareFailed'
+          : isCompressing()
+            ? 'error.compressFailed'
+            : 'error.convertFailed'
+    );
     setStatus(err.message || fallback, 'error');
   } finally {
     hideProgress();
@@ -1028,6 +1042,27 @@ resetBtn.addEventListener('click', () => {
   fileInput.value = '';
   setFile(null);
 });
+
+function syncLangButtons() {
+  const lang = getLanguage();
+  langFrBtn.setAttribute('aria-pressed', String(lang === 'fr'));
+  langEnBtn.setAttribute('aria-pressed', String(lang === 'en'));
+}
+
+langFrBtn.addEventListener('click', () => setLanguage('fr'));
+langEnBtn.addEventListener('click', () => setLanguage('en'));
+
+// Les traductions statiques (data-i18n) se réappliquent seules dans setLanguage(). Ce qui
+// reste à refaire manuellement au changement de langue : le libellé du bouton principal
+// (dépend du mode courant, pas d'un data-i18n statique) et les deux options de format de
+// sortie non universelles (SVG vectorisé, GIF animé).
+document.addEventListener('anyform:langchange', () => {
+  syncLangButtons();
+  convertBtnLabel.textContent = t(MODE_LABEL_KEYS[currentModeValue]);
+  if (!isCompressing() && !isInspectMode() && !isCompareMode()) refreshOutputOptions();
+});
+
+syncLangButtons();
 
 // Au premier chargement, les <select> ont déjà leurs options par défaut (livrées
 // statiquement dans le HTML) : on ne les repeuple pas ici pour éviter un bug où le

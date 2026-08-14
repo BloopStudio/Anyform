@@ -41,7 +41,7 @@ function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Impossible de charger l'image (fichier corrompu ou non supporté)."));
+    img.onerror = () => reject(new Error(t('error.imageLoad')));
     img.src = src;
   });
 }
@@ -132,7 +132,7 @@ async function rasterize(file, targetFormat, { quality = 0.9 } = {}) {
   }
 
   const pngBlob = await new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Échec de l'encodage PNG intermédiaire."))), 'image/png');
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error(t('error.pngEncode')))), 'image/png');
   });
 
   if (targetFormat === 'ico') {
@@ -147,11 +147,11 @@ async function rasterize(file, targetFormat, { quality = 0.9 } = {}) {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
-        if (!blob) return reject(new Error(`Le navigateur ne supporte pas l'export en ${targetFormat}.`));
+        if (!blob) return reject(new Error(t('error.formatExportUnsupported', { format: targetFormat })));
         // Certains navigateurs retombent silencieusement sur du PNG si le format demandé
         // (ex: AVIF) n'est pas supporté à l'encodage, sans lever d'erreur.
         if (blob.type !== mime) {
-          return reject(new Error(`Ton navigateur ne supporte pas l'export en ${targetFormat}.`));
+          return reject(new Error(t('error.formatExportUnsupportedBrowser', { format: targetFormat })));
         }
         resolve(blob);
       },

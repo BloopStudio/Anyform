@@ -164,7 +164,7 @@ async function compareImages(fileA, fileB) {
   outCtx.putImageData(outData, 0, 0);
 
   const diffBlob = await new Promise((resolve, reject) => {
-    outCanvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Échec de la génération de la diff.'))), 'image/png');
+    outCanvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error(t('error.diffGeneration')))), 'image/png');
   });
 
   const percentIdentical = totalPixels > 0 ? Math.round(((totalPixels - diffCount) / totalPixels) * 1000) / 10 : 100;
