@@ -55,6 +55,11 @@ const vtt = anyform.convertSubtitle(srt, 'srt', 'vtt');
 // Inspection et comparaison — chemins de fichiers, aucune modification du fichier source.
 const infos = await anyform.inspectFile('photo.jpg', 'image', 'jpg');
 const diff = await anyform.compareFiles('avant.png', 'apres.png', 'image');
+
+// Inspection uniquement (pas de conversion) : PDF et ZIP, avec les catégories 'document'
+// et 'archive' — et EXIF (appareil, date de prise de vue, GPS...) pour les JPEG/TIFF.
+const pdfInfos = await anyform.inspectFile('rapport.pdf', 'document', 'pdf');
+const zipInfos = await anyform.inspectFile('archive.zip', 'archive', 'zip');
 ```
 
 Toutes les fonctions sont asynchrones sauf `convertData`, `convertSubtitle`, `parseSubtitle`,
@@ -70,6 +75,8 @@ notable). Voir `index.js` pour la liste complète des exports et leurs domaines.
 - Audio : WAV, MP3, OGG, FLAC, AAC, M4A, WMA, Opus
 - Vidéo : MP4, WebM, MOV, AVI, MKV, FLV, OGV
 - Sous-titres : SRT ⇄ VTT ⇄ ASS (texte pur, aucune dépendance)
+- Inspection seule (pas de conversion) : PDF (`'document'`) et ZIP (`'archive'`) — métadonnées,
+  nombre de pages, contenu de l'archive, sans dépendance externe
 
 Audio et vidéo passent par le binaire `ffmpeg` statique fourni par `ffmpeg-static` (installé
 automatiquement avec le package, aucune install système requise).
