@@ -20,6 +20,7 @@ const {
 const { convertSubtitle, SUBTITLE_FORMATS } = require('../lib/subtitles');
 const { inspectFile } = require('../lib/inspect');
 const { compareFiles } = require('../lib/compare');
+const { t } = require('../lib/i18n');
 
 const CATEGORY_EXT = {
   image: ['svg', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tiff', 'avif', 'ico', 'heic', 'heif'],
@@ -50,12 +51,12 @@ function normalizeExt(ext) {
 async function convertOne(filePath, target, options) {
   const category = detectCategory(filePath);
   if (!category) {
-    throw new Error(`Type de fichier non reconnu : ${filePath}`);
+    throw new Error(t('cli.errUnrecognizedFileType', { file: filePath }));
   }
 
   const sourceExt = normalizeExt(path.extname(filePath).slice(1).toLowerCase());
   if (sourceExt === normalizeExt(target)) {
-    throw new Error(`Le format de sortie (${target}) est identique au format d'entrée.`);
+    throw new Error(t('cli.errSameFormat', { target }));
   }
 
   const outDir = options.outDir || path.dirname(filePath);
@@ -64,7 +65,7 @@ async function convertOne(filePath, target, options) {
   const outPath = path.join(outDir, `${baseName}.${target}`);
 
   if (category === 'image') {
-    if (!IMAGE_FORMATS.includes(target)) throw new Error(`Format image non supporté: ${target}`);
+    if (!IMAGE_FORMATS.includes(target)) throw new Error(t('cli.errImageFormatUnsupported', { format: target }));
     const inputBuffer = fs.readFileSync(filePath);
     const result = await convertImage(inputBuffer, target, {
       quality: options.quality,
@@ -72,18 +73,18 @@ async function convertOne(filePath, target, options) {
     });
     fs.writeFileSync(outPath, result);
   } else if (category === 'data') {
-    if (!DATA_FORMATS.includes(target)) throw new Error(`Format de données non supporté: ${target}`);
+    if (!DATA_FORMATS.includes(target)) throw new Error(t('cli.errDataFormatUnsupported', { format: target }));
     const inputBuffer = fs.readFileSync(filePath);
     const result = convertData(inputBuffer, sourceExt, target);
     fs.writeFileSync(outPath, result);
   } else if (category === 'audio') {
-    if (!AUDIO_FORMATS.includes(target)) throw new Error(`Format audio non supporté: ${target}`);
+    if (!AUDIO_FORMATS.includes(target)) throw new Error(t('cli.errAudioFormatUnsupported', { format: target }));
     await convertMedia(filePath, outPath);
   } else if (category === 'video') {
-    if (!VIDEO_FORMATS.includes(target)) throw new Error(`Format vidéo non supporté: ${target}`);
+    if (!VIDEO_FORMATS.includes(target)) throw new Error(t('cli.errVideoFormatUnsupported', { format: target }));
     await convertMedia(filePath, outPath);
   } else if (category === 'subtitle') {
-    if (!SUBTITLE_FORMATS.includes(target)) throw new Error(`Format de sous-titres non supporté: ${target}`);
+    if (!SUBTITLE_FORMATS.includes(target)) throw new Error(t('cli.errSubtitleFormatUnsupported', { format: target }));
     const text = fs.readFileSync(filePath, 'utf8');
     const result = convertSubtitle(text, sourceExt, target);
     fs.writeFileSync(outPath, result);
@@ -100,7 +101,7 @@ async function convertOne(filePath, target, options) {
 async function compressOne(filePath, level, options) {
   const category = detectCategory(filePath);
   if (category !== 'image' && category !== 'audio' && category !== 'video') {
-    throw new Error(`Compression non supportée pour ce type de fichier : ${filePath}`);
+    throw new Error(t('cli.errCompressUnsupportedType', { file: filePath }));
   }
 
   const outDir = options.outDir || path.dirname(filePath);
@@ -142,25 +143,23 @@ const program = new Command();
 program
   .name('anyform')
   .version(version)
-  .description(
-    'Convertit des fichiers image, données, audio ou vidéo vers un autre format ' +
-      '(détection automatique du type selon l\'extension).'
-  )
-  .argument('<files...>', 'fichier(s) à convertir')
-  .option('-t, --to <format>', `format de sortie (${ALL_FORMATS.join(', ')})`)
-  .option('-c, --compress', `compresser le(s) fichier(s) sans changer de format (${COMPRESS_FORMATS.join(', ')}), au lieu de convertir avec -t`)
-  .option('-l, --level <level>', 'niveau de compression : light, medium, strong', 'medium')
-  .option('-o, --out-dir <dir>', 'dossier de sortie (par défaut : même dossier que le fichier source)')
-  .option('-q, --quality <number>', 'qualité de compression pour jpg/webp/avif (1-100)', (v) => parseInt(v, 10))
-  .option('-d, --density <number>', 'densité (DPI) utilisée pour rasteriser un SVG', (v) => parseInt(v, 10))
+  .description(t('cli.description'))
+  .argument('<files...>', t('cli.filesArg'))
+  .option('-t, --to <format>', `${t('cli.optTo')} (${ALL_FORMATS.join(', ')})`)
+  .option('-c, --compress', `${t('cli.optCompress')} (${COMPRESS_FORMATS.join(', ')})${t('cli.optCompressSuffix')}`)
+  .option('-l, --level <level>', t('cli.optLevel'), 'medium')
+  .option('-o, --out-dir <dir>', t('cli.optOutDir'))
+  .option('-q, --quality <number>', t('cli.optQuality'), (v) => parseInt(v, 10))
+  .option('-d, --density <number>', t('cli.optDensity'), (v) => parseInt(v, 10))
+  .option('--lang <lang>', t('cli.optLang'))
   .action(async (files, options) => {
     if (!options.to && !options.compress) {
-      console.error('Erreur : précisez soit -t/--to <format> (conversion), soit -c/--compress (compression).');
+      console.error(t('cli.errNeedToOrCompress'));
       process.exitCode = 1;
       return;
     }
     if (options.to && options.compress) {
-      console.error('Erreur : -t/--to et -c/--compress sont incompatibles, choisissez l\'un ou l\'autre.');
+      console.error(t('cli.errToAndCompressExclusive'));
       process.exitCode = 1;
       return;
     }
@@ -188,12 +187,13 @@ program
 // le modèle "un ou plusieurs fichiers -> un format cible" de convertOne/compressOne.
 program
   .command('info <file>')
-  .description('affiche les propriétés d\'un fichier (dimensions, durée, lignes/colonnes...) sans le modifier')
-  .option('--json', 'affiche le résultat au format JSON plutôt qu\'en texte lisible')
+  .description(t('cli.infoDescription'))
+  .option('--json', t('cli.optJson'))
+  .option('--lang <lang>', t('cli.optLang'))
   .action(async (filePath, options) => {
     const category = detectCategory(filePath);
     if (!category) {
-      console.error(`Erreur : type de fichier non reconnu : ${filePath}`);
+      console.error(t('cli.errUnrecognizedFileTypeInfo', { file: filePath }));
       process.exitCode = 1;
       return;
     }
@@ -209,29 +209,30 @@ program
         for (const item of items) console.log(`${item.label.padEnd(width)}  ${item.value}`);
       }
     } catch (err) {
-      console.error(`Erreur : ${err.message}`);
+      console.error(t('cli.errGeneric', { message: err.message }));
       process.exitCode = 1;
     }
   });
 
 program
   .command('diff <fileA> <fileB>')
-  .description('compare deux fichiers du même type (image : diff visuelle, données/sous-titres : diff ligne à ligne, reste : empreinte SHA-256)')
+  .description(t('cli.diffDescription'))
   // Pas de forme courte -o : la commande racine utilise déjà -o pour --out-dir, et
   // Commander résout les options courtes au niveau du programme entier, pas par
   // sous-commande — un -o ici serait silencieusement absorbé par --out-dir.
-  .option('--out <path>', 'fichier de sortie pour la diff (image : PNG ; texte : diff au format +/-). Par défaut : à côté de fileA')
+  .option('--out <path>', t('cli.optOut'))
+  .option('--lang <lang>', t('cli.optLang'))
   .action(async (pathA, pathB, options) => {
     const categoryA = detectCategory(pathA);
     const categoryB = detectCategory(pathB);
 
     if (!categoryA || !categoryB) {
-      console.error('Erreur : un des deux fichiers a un type non reconnu par Anyform.');
+      console.error(t('cli.errUnrecognizedTypeOneOfTwo'));
       process.exitCode = 1;
       return;
     }
     if (categoryA !== categoryB) {
-      console.error('Erreur : les deux fichiers doivent être du même type pour être comparés.');
+      console.error(t('cli.errMustBeSameType'));
       process.exitCode = 1;
       return;
     }
@@ -242,17 +243,17 @@ program
 
       if (result.type === 'image') {
         console.log(
-          result.identical ? 'Images identiques.' : `${result.percentIdentical}% des pixels identiques (zone commune).`
+          result.identical ? t('cli.imagesIdentical') : t('cli.percentIdentical', { percent: result.percentIdentical })
         );
         if (result.sizeMismatch) {
-          console.log(`Dimensions différentes : A = ${result.dimensionsA}, B = ${result.dimensionsB} — comparaison faite sur leur zone commune.`);
+          console.log(t('cli.dimensionsMismatch', { a: result.dimensionsA, b: result.dimensionsB }));
         }
         const outPath = options.out || path.join(path.dirname(pathA), `${baseName}-diff.png`);
         fs.writeFileSync(outPath, result.diffBuffer);
-        console.log(`Diff écrite dans ${outPath}`);
+        console.log(t('cli.diffWritten', { path: outPath }));
       } else if (result.type === 'text') {
         console.log(
-          result.identical ? 'Fichiers identiques.' : `${result.added} ligne(s) ajoutée(s), ${result.removed} ligne(s) supprimée(s).`
+          result.identical ? t('cli.filesIdentical') : t('cli.linesChanged', { added: result.added, removed: result.removed })
         );
         const diffText = result.diff
           .filter((line) => line.type !== 'equal')
@@ -260,20 +261,20 @@ program
           .join('\n');
         if (options.out) {
           fs.writeFileSync(options.out, diffText + '\n');
-          console.log(`Diff écrite dans ${options.out}`);
+          console.log(t('cli.diffWritten', { path: options.out }));
         } else if (diffText) {
           console.log(diffText);
         }
       } else {
-        console.log(result.identical ? 'Fichiers identiques (même empreinte SHA-256).' : 'Fichiers différents.');
+        console.log(result.identical ? t('cli.hashIdentical') : t('cli.filesDifferent'));
         if (result.tooLarge) {
-          console.log('Fichier trop volumineux pour une diff ligne à ligne détaillée — comparaison par empreinte seulement.');
+          console.log(t('cli.tooLarge'));
         }
-        console.log(`A : ${result.sizeA} octets — SHA-256 ${result.hashA}`);
-        console.log(`B : ${result.sizeB} octets — SHA-256 ${result.hashB}`);
+        console.log(t('cli.sizeHash', { label: 'A', size: result.sizeA, hash: result.hashA }));
+        console.log(t('cli.sizeHash', { label: 'B', size: result.sizeB, hash: result.hashB }));
       }
     } catch (err) {
-      console.error(`Erreur : ${err.message}`);
+      console.error(t('cli.errGeneric', { message: err.message }));
       process.exitCode = 1;
     }
   });
