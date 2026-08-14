@@ -18,14 +18,14 @@ D'autres façons d'utiliser Anyform :
 ## Installation
 
 ```bash
-npm install anyform
+npm install @bloopstudio/anyform
 ```
 
 ## Utilisation
 
 ```js
-const anyform = require('anyform');
-// ou : import anyform from 'anyform';
+const anyform = require('@bloopstudio/anyform');
+// ou : import anyform from '@bloopstudio/anyform';
 
 // Images — Buffer en entrée, Buffer en sortie (chaîne de caractères si la cible est SVG,
 // issue de la vectorisation).
@@ -83,7 +83,7 @@ d'importer le module :
 
 ```js
 process.env.LANG = 'en_US.UTF-8';
-const anyform = require('anyform');
+const anyform = require('@bloopstudio/anyform');
 ```
 
 `anyform.t(key, vars)` et `anyform.getLanguage()` sont aussi exposés directement, au cas où
