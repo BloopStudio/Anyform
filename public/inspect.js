@@ -7,14 +7,14 @@
  */
 
 function formatDuration(seconds) {
-  if (!Number.isFinite(seconds)) return 'inconnue';
+  if (!Number.isFinite(seconds)) return t('inspect.durationUnknown');
   const m = Math.floor(seconds / 60);
   const s = Math.round(seconds % 60);
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 function formatDate(timestamp) {
-  return new Date(timestamp).toLocaleString('fr-FR');
+  return new Date(timestamp).toLocaleString(getLanguage() === 'en' ? 'en-US' : 'fr-FR');
 }
 
 // Charge un fichier audio/vidéo dans un élément média caché le temps de lire ses
@@ -36,7 +36,7 @@ function readMediaMetadata(file, tag) {
     };
     el.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error('Impossible de lire ce fichier (corrompu ou format non supporté par le navigateur).'));
+      reject(new Error(t('error.mediaUnreadable')));
     };
   });
 }
@@ -51,27 +51,27 @@ async function inspectImage(file) {
     const widthMatch = /width="([\d.]+)/.exec(text);
     const heightMatch = /height="([\d.]+)/.exec(text);
     const viewBoxMatch = /viewBox="([^"]+)"/.exec(text);
-    if (widthMatch && heightMatch) items.push({ label: 'Dimensions déclarées', value: `${widthMatch[1]} × ${heightMatch[1]}` });
+    if (widthMatch && heightMatch) items.push({ label: t('inspect.declaredDimensions'), value: `${widthMatch[1]} × ${heightMatch[1]}` });
     if (viewBoxMatch) items.push({ label: 'viewBox', value: viewBoxMatch[1] });
-    items.push({ label: 'Type', value: 'SVG (vectoriel)' });
+    items.push({ label: t('inspect.type'), value: t('inspect.typeVector') });
     return items;
   }
 
   const sourceBlob = isHeicFile(file) ? await heicToPngBlob(file) : file;
   const dataUrl = await readFileAsDataUrl(sourceBlob);
   const img = await loadImage(dataUrl);
-  items.push({ label: 'Dimensions', value: `${img.naturalWidth} × ${img.naturalHeight} px` });
-  items.push({ label: 'Ratio', value: (img.naturalWidth / img.naturalHeight).toFixed(3) });
-  if (isHeicFile(file)) items.push({ label: 'Note', value: 'HEIC décodé pour lecture des dimensions (via heic2any)' });
+  items.push({ label: t('inspect.dimensions'), value: `${img.naturalWidth} × ${img.naturalHeight} px` });
+  items.push({ label: t('inspect.ratio'), value: (img.naturalWidth / img.naturalHeight).toFixed(3) });
+  if (isHeicFile(file)) items.push({ label: t('inspect.note'), value: t('inspect.heicNote') });
   return items;
 }
 
 async function inspectAudio(file) {
   const meta = await readMediaMetadata(file, 'audio');
-  const items = [{ label: 'Durée', value: formatDuration(meta.duration) }];
+  const items = [{ label: t('inspect.duration'), value: formatDuration(meta.duration) }];
   if (Number.isFinite(meta.duration) && meta.duration > 0) {
     const kbps = Math.round((file.size * 8) / meta.duration / 1000);
-    items.push({ label: 'Débit moyen (estimé)', value: `${kbps} kbps` });
+    items.push({ label: t('inspect.avgBitrate'), value: `${kbps} kbps` });
   }
   return items;
 }
@@ -79,25 +79,25 @@ async function inspectAudio(file) {
 async function inspectVideo(file) {
   const meta = await readMediaMetadata(file, 'video');
   const items = [
-    { label: 'Durée', value: formatDuration(meta.duration) },
-    { label: 'Résolution', value: `${meta.width} × ${meta.height} px` },
+    { label: t('inspect.duration'), value: formatDuration(meta.duration) },
+    { label: t('inspect.resolution'), value: `${meta.width} × ${meta.height} px` },
   ];
   if (Number.isFinite(meta.duration) && meta.duration > 0) {
     const kbps = Math.round((file.size * 8) / meta.duration / 1000);
-    items.push({ label: 'Débit moyen (estimé)', value: `${kbps} kbps` });
+    items.push({ label: t('inspect.avgBitrate'), value: `${kbps} kbps` });
   }
   return items;
 }
 
 async function inspectData(file) {
   const workbook = await fileToWorkbook(file);
-  const items = [{ label: 'Feuilles', value: workbook.SheetNames.join(', ') }];
+  const items = [{ label: t('inspect.sheets'), value: workbook.SheetNames.join(', ') }];
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
   const columnCount = rows.length ? Math.max(...rows.map((r) => r.length)) : 0;
-  items.push({ label: 'Lignes (feuille 1, en-tête incluse)', value: String(rows.length) });
-  items.push({ label: 'Colonnes (feuille 1)', value: String(columnCount) });
-  if (rows.length) items.push({ label: 'En-têtes', value: rows[0].join(', ') });
+  items.push({ label: t('inspect.rows'), value: String(rows.length) });
+  items.push({ label: t('inspect.columns'), value: String(columnCount) });
+  if (rows.length) items.push({ label: t('inspect.headers'), value: rows[0].join(', ') });
   return items;
 }
 
@@ -105,13 +105,13 @@ async function inspectSubtitle(file) {
   const text = await file.text();
   const ext = extensionOf(file);
   const cues = parseSubtitle(text, ext);
-  const items = [{ label: 'Nombre de sous-titres', value: String(cues.length) }];
+  const items = [{ label: t('inspect.subtitleCount'), value: String(cues.length) }];
   if (cues.length) {
     const first = cues[0].start;
     const last = Math.max(...cues.map((c) => c.end));
-    items.push({ label: 'Premier timecode', value: formatDuration(first) });
-    items.push({ label: 'Dernier timecode', value: formatDuration(last) });
-    items.push({ label: 'Plage couverte', value: formatDuration(last - first) });
+    items.push({ label: t('inspect.firstTimecode'), value: formatDuration(first) });
+    items.push({ label: t('inspect.lastTimecode'), value: formatDuration(last) });
+    items.push({ label: t('inspect.coveredRange'), value: formatDuration(last - first) });
   }
   return items;
 }
@@ -125,9 +125,9 @@ async function inspectSubtitle(file) {
  */
 async function inspectFile(file, category) {
   const generic = [
-    { label: 'Nom', value: file.name },
-    { label: 'Taille', value: formatBytes(file.size) },
-    { label: 'Dernière modification', value: formatDate(file.lastModified) },
+    { label: t('inspect.name'), value: file.name },
+    { label: t('inspect.size'), value: formatBytes(file.size) },
+    { label: t('inspect.lastModified'), value: formatDate(file.lastModified) },
   ];
 
   let specific = [];

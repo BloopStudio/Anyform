@@ -55,5 +55,5 @@ async function convertData(file, targetFormat) {
     });
   }
 
-  throw new Error(`Format de données non supporté: ${targetFormat}`);
+  throw new Error(t('error.dataFormatUnsupported', { format: targetFormat }));
 }
