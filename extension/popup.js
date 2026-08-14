@@ -173,6 +173,17 @@ function categoryOfExt(ext) {
   return null;
 }
 
+// L'Inspecteur reconnaît quelques formats image de plus que le Convertisseur : TIFF/ICO/AVIF
+// sont des formats de sortie chez nous (Canvas ne sait pas forcément les recharger en entrée
+// pour une conversion), mais les inspecter n'a pas besoin de les reconvertir — juste de lire
+// leurs métadonnées (TIFF via UTIF.js sans décodage complet, ICO via parsing d'en-tête, AVIF
+// via <img> qui le décode nativement dans les navigateurs récents).
+const INSPECT_ONLY_IMAGE_EXTS = ['tiff', 'tif', 'ico', 'avif'];
+
+function inspectCategoryOfExt(ext) {
+  return categoryOfExt(ext) || (INSPECT_ONLY_IMAGE_EXTS.includes(ext) ? 'image' : null);
+}
+
 const BYTE_UNITS = { fr: ['o', 'Ko', 'Mo', 'Go'], en: ['B', 'KB', 'MB', 'GB'] };
 
 function formatBytes(bytes) {
@@ -492,7 +503,7 @@ function setInspectFile(file) {
   }
 
   const ext = extensionOf(file);
-  if (!categoryOfExt(ext)) {
+  if (!inspectCategoryOfExt(ext)) {
     selectedInspectFile = null;
     updateConvertBtnEnabled();
     setStatus(t('error.unrecognizedFormat', { ext: ext || '?' }), 'error');
@@ -772,7 +783,7 @@ async function runConvertOrCompress() {
 
 async function runInspect() {
   setStatus(t('status.analyzing'));
-  const category = categoryOfExt(extensionOf(selectedInspectFile));
+  const category = inspectCategoryOfExt(extensionOf(selectedInspectFile));
   const items = await inspectFile(selectedInspectFile, category);
   setStatus('');
   renderInspectResult(items);
