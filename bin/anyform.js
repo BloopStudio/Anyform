@@ -41,6 +41,17 @@ function detectCategory(filePath) {
   return null;
 }
 
+// "info" reconnaît des formats de plus que la conversion : PDF et ZIP ne sont pas du tout
+// des formats qu'Anyform convertit, mais les inspecter n'a besoin que de lire leurs
+// métadonnées. Séparé de CATEGORY_EXT pour ne pas les rendre éligibles à convertOne/
+// compressOne, qui n'ont rien à en faire.
+const INSPECT_ONLY_EXT = { pdf: 'document', zip: 'archive' };
+
+function detectInspectCategory(filePath) {
+  const ext = path.extname(filePath).slice(1).toLowerCase();
+  return detectCategory(filePath) || INSPECT_ONLY_EXT[ext] || null;
+}
+
 // "jpeg" et "jpg" sont le même format sous deux extensions différentes ; on les traite
 // comme identiques partout où on compare des extensions (sinon .jpeg -> jpg serait refusé
 // comme "conversion vers un format identique" par erreur, et inversement accepté à tort).
@@ -191,7 +202,7 @@ program
   .option('--json', t('cli.optJson'))
   .option('--lang <lang>', t('cli.optLang'))
   .action(async (filePath, options) => {
-    const category = detectCategory(filePath);
+    const category = detectInspectCategory(filePath);
     if (!category) {
       console.error(t('cli.errUnrecognizedFileTypeInfo', { file: filePath }));
       process.exitCode = 1;
