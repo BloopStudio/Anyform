@@ -14,6 +14,7 @@ on:
 permissions:
   contents: write
   actions: write
+  id-token: write
 
 # Empêche deux runs de tourner en même temps : sans ça, deux publications rapprochées
 # peuvent chacune incrémenter la version à partir du même package.json de départ et se
@@ -51,10 +52,13 @@ jobs:
 
       - run: npm ci
 
+      # Trusted Publishing (OIDC) nécessite npm >= 11.5.1 ; celle fournie par
+      # setup-node/Node 22 est plus ancienne, d'où la mise à jour explicite.
+      - name: Mettre à jour npm
+        run: npm install -g npm@latest
+
       - name: Publier sur npm
         run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Supprimer les anciens runs du workflow (garder les 10 derniers)
         env:
