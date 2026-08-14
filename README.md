@@ -19,6 +19,7 @@ installation, ouvre directement dans le navigateur.
 | [`cli-converter`](https://github.com/TheDEMON78/Anyform/tree/cli-converter) | Outil en ligne de commande (non publié sur npm : `git clone` + `npm install` + `npm link`) |
 | [`browser-extension`](https://github.com/TheDEMON78/Anyform/tree/browser-extension) | Extension Chrome/Edge (clic droit sur une image → convertir) |
 | [`desktop-app`](https://github.com/TheDEMON78/Anyform/tree/desktop-app) | App de bureau Electron (Windows/macOS/Linux) |
+| [`node-library`](https://github.com/TheDEMON78/Anyform/tree/node-library) | Bibliothèque Node.js (`npm install anyform`) — mêmes fonctions que le CLI, appelables directement depuis un autre programme |
 
 ## Téléchargements
 
