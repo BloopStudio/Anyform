@@ -1,0 +1,68 @@
+name: Publier sur npm
+
+on:
+  push:
+    branches: [node-library]
+    paths:
+      - "index.js"
+      - "lib/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/publish-npm.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+# Empêche deux runs de tourner en même temps : sans ça, deux publications rapprochées
+# peuvent chacune incrémenter la version à partir du même package.json de départ et se
+# marcher dessus (l'une des deux verrait son "npm publish" refusé pour numéro déjà pris,
+# ou pire, écraserait silencieusement le bump de l'autre selon l'ordre d'arrivée).
+concurrency:
+  group: publish-npm
+
+jobs:
+  bump-and-publish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Incrémenter le patch de package.json
+        run: |
+          NEW_VERSION=$(npm version patch --no-git-tag-version)
+          echo "NEW_VERSION=${NEW_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Commit et push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: bump version to ${NEW_VERSION} [skip ci]"
+          git push
+
+      - run: npm ci
+
+      - name: Publier sur npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Supprimer les anciens runs du workflow (garder les 10 derniers)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run list --repo "${{ github.repository }}" --workflow "publish-npm.yml" \
+            --json databaseId,createdAt --limit 100 \
+            --jq 'sort_by(.createdAt) | reverse | .[10:] | .[].databaseId' | while read -r id; do
+            echo "Suppression du run obsolète : $id"
+            gh run delete "$id" --repo "${{ github.repository }}" || true
+          done
