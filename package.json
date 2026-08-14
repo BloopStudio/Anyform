@@ -1,19 +1,32 @@
 {
-  "name": "anyform-cli",
-  "version": "1.0.8",
-  "description": "Anyform - convertisseur de formats (images, données, audio, vidéo) - ligne de commande",
-  "main": "lib/convert.js",
+  "name": "anyform",
+  "version": "1.0.0",
+  "description": "Convertisseur de formats de fichiers (images, données, audio, vidéo, sous-titres), 100% local — bibliothèque Node.js.",
+  "main": "index.js",
   "type": "commonjs",
   "author": "BloopStudio",
   "license": "MIT",
-  "bin": {
-    "anyform": "./bin/anyform.js"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheDEMON78/Anyform.git"
   },
-  "scripts": {
-    "start": "node bin/anyform.js"
-  },
+  "homepage": "https://github.com/TheDEMON78/Anyform/tree/node-library",
+  "keywords": [
+    "convert",
+    "conversion",
+    "image",
+    "audio",
+    "video",
+    "csv",
+    "xlsx",
+    "subtitles",
+    "compress"
+  ],
+  "files": [
+    "index.js",
+    "lib/"
+  ],
   "dependencies": {
-    "commander": "^12.1.0",
     "sharp": "^0.35.3",
     "potrace": "^2.1.8",
     "heic-convert": "^2.1.0",
