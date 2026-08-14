@@ -173,15 +173,21 @@ function categoryOfExt(ext) {
   return null;
 }
 
-// L'Inspecteur reconnaît quelques formats image de plus que le Convertisseur : TIFF/ICO/AVIF
-// sont des formats de sortie chez nous (Canvas ne sait pas forcément les recharger en entrée
-// pour une conversion), mais les inspecter n'a pas besoin de les reconvertir — juste de lire
-// leurs métadonnées (TIFF via UTIF.js sans décodage complet, ICO via parsing d'en-tête, AVIF
-// via <img> qui le décode nativement dans les navigateurs récents).
-const INSPECT_ONLY_IMAGE_EXTS = ['tiff', 'tif', 'ico', 'avif'];
+// L'Inspecteur reconnaît des formats de plus que le Convertisseur : TIFF/ICO/AVIF sont des
+// formats de sortie chez nous (Canvas ne sait pas forcément les recharger en entrée pour une
+// conversion), et PDF/ZIP ne sont pas du tout des formats qu'Anyform convertit — mais les
+// inspecter n'a besoin que de lire leurs métadonnées, pas de les (re)convertir.
+const INSPECT_ONLY_EXTS = {
+  tiff: 'image',
+  tif: 'image',
+  ico: 'image',
+  avif: 'image',
+  pdf: 'document',
+  zip: 'archive',
+};
 
 function inspectCategoryOfExt(ext) {
-  return categoryOfExt(ext) || (INSPECT_ONLY_IMAGE_EXTS.includes(ext) ? 'image' : null);
+  return categoryOfExt(ext) || INSPECT_ONLY_EXTS[ext] || null;
 }
 
 const BYTE_UNITS = { fr: ['o', 'Ko', 'Mo', 'Go'], en: ['B', 'KB', 'MB', 'GB'] };
