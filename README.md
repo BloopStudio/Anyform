@@ -1,108 +1,101 @@
 # Anyform
 
-Convertisseur de formats de fichiers, en ligne de commande. Développé par **BloopStudio**.
-Une branche `web-converter` propose la même logique via une interface web (drag & drop),
-déployée sur GitHub Pages.
+Convertisseur de formats de fichiers (images, données, audio, vidéo, sous-titres), 100%
+local — bibliothèque Node.js. Développé par **BloopStudio**. Même code que
+[`cli-converter`](https://github.com/TheDEMON78/Anyform/tree/cli-converter) (la ligne de
+commande `anyform`), exposé ici comme package npm installable pour être appelé directement
+depuis un autre programme Node, sans passer par un sous-processus.
+
+D'autres façons d'utiliser Anyform :
+
+| Branche | Description |
+| --- | --- |
+| [`web-converter`](https://github.com/TheDEMON78/Anyform/tree/web-converter) | App web, déployée sur [thedemon78.github.io/Anyform](https://thedemon78.github.io/Anyform/) |
+| [`cli-converter`](https://github.com/TheDEMON78/Anyform/tree/cli-converter) | Outil en ligne de commande |
+| [`browser-extension`](https://github.com/TheDEMON78/Anyform/tree/browser-extension) | Extension Chrome/Edge |
+| [`desktop-app`](https://github.com/TheDEMON78/Anyform/tree/desktop-app) | Application de bureau Electron |
+
+## Installation
+
+```bash
+npm install anyform
+```
+
+## Utilisation
+
+```js
+const anyform = require('anyform');
+// ou : import anyform from 'anyform';
+
+// Images — Buffer en entrée, Buffer en sortie (chaîne de caractères si la cible est SVG,
+// issue de la vectorisation).
+const fs = require('fs');
+const input = fs.readFileSync('photo.png');
+const webpBuffer = await anyform.convertImage(input, 'webp', { quality: 80 });
+fs.writeFileSync('photo.webp', webpBuffer);
+
+// Compression (même format, taille réduite) — retourne { buffer, ext } : ext peut différer
+// de la source pour le HEIC/HEIF, décodé puis compressé en PNG.
+const { buffer: compressedBuffer, ext } = await anyform.compressImage(input, 'png', 'strong');
+fs.writeFileSync(`photo-compresse.${ext}`, compressedBuffer);
+
+// Données — Buffer en entrée, Buffer en sortie.
+const csv = fs.readFileSync('data.csv');
+const xlsx = anyform.convertData(csv, 'csv', 'xlsx');
+fs.writeFileSync('data.xlsx', xlsx);
+
+// Audio/vidéo — chemins de fichiers (ffmpeg lit/écrit sur disque directement).
+await anyform.convertMedia('musique.wav', 'musique.mp3');
+await anyform.compressVideo('clip.mp4', 'clip-compresse.mp4', 'mp4', 'medium');
+
+// Sous-titres — texte en entrée, texte en sortie.
+const srt = fs.readFileSync('sous-titres.srt', 'utf8');
+const vtt = anyform.convertSubtitle(srt, 'srt', 'vtt');
+
+// Inspection et comparaison — chemins de fichiers, aucune modification du fichier source.
+const infos = await anyform.inspectFile('photo.jpg', 'image', 'jpg');
+const diff = await anyform.compareFiles('avant.png', 'apres.png', 'image');
+```
+
+Toutes les fonctions sont asynchrones sauf `convertData`, `convertSubtitle`, `parseSubtitle`,
+`normalizeFormat`, `isSvgBuffer` et `isHeicBuffer` (traitement synchrone, sans I/O bloquante
+notable). Voir `index.js` pour la liste complète des exports et leurs domaines.
 
 ## Formats supportés
 
-- Images : SVG, PNG, JPG, WebP, TIFF, GIF, AVIF, ICO, HEIC/HEIF en entrée (sharp + potrace
-  pour la vectorisation raster → SVG, `heic-convert` pour le décodage HEIC/HEIF)
+- Images : SVG, PNG, JPG, WebP, TIFF, GIF, AVIF, ICO, HEIC/HEIF en entrée ⇄
+  PNG/JPG/WebP/AVIF/TIFF/SVG en sortie (sharp + potrace pour la vectorisation raster → SVG,
+  `heic-convert` pour le décodage HEIC/HEIF)
 - Données : CSV ⇄ JSON ⇄ XLSX (SheetJS, build patché sans vulnérabilité connue)
 - Audio : WAV, MP3, OGG, FLAC, AAC, M4A, WMA, Opus
 - Vidéo : MP4, WebM, MOV, AVI, MKV, FLV, OGV
 - Sous-titres : SRT ⇄ VTT ⇄ ASS (texte pur, aucune dépendance)
 
 Audio et vidéo passent par le binaire `ffmpeg` statique fourni par `ffmpeg-static` (installé
-automatiquement avec `npm install`, aucune install système requise).
+automatiquement avec le package, aucune install système requise).
 
-Le type de fichier (image/données/audio/vidéo/sous-titres) est détecté automatiquement à
-partir de l'extension.
+## Langue des messages
 
-## Convertisseur et Compresseur
+Les messages d'erreur générés par la bibliothèque (`err.message`) suivent la même détection
+que le CLI : `$LC_ALL`/`$LANG`/`$LANGUAGE` de l'environnement, anglais si l'un commence par
+`en`, français sinon. Pour forcer une langue, définir la variable d'environnement avant
+d'importer le module :
 
-En plus de la conversion (`-t/--to`), le CLI propose une compression sans changement de
-format (`-c/--compress`) pour réduire la taille des images, de l'audio et des vidéos :
-
-- Images compressibles : PNG, JPG, WebP, GIF (via `sharp`) — le HEIC/HEIF est décodé puis
-  compressé en PNG, comme sur les autres plateformes
-- Audio compressible : MP3, OGG, M4A, AAC, Opus, WMA (bitrate réduit), FLAC
-  (`-compression_level`, sans perte), WAV (fréquence d'échantillonnage réduite, PCM brut)
-- Vidéos compressibles : MP4, WebM, MOV, MKV, AVI, FLV, OGV (via `ffmpeg`, codec/conteneur
-  d'origine conservé, audio non retouché)
-- Trois niveaux : `light`, `medium` (par défaut), `strong`
-
-Le fichier compressé est écrit à côté avec le suffixe `-compresse` (le format de sortie ne
-change jamais, sauf HEIC/HEIF → PNG). Les sous-titres n'ont pas de notion de "compression
-sans changer de format" — non proposé pour cette catégorie.
-
-## Inspecteur et Comparateur
-
-Deux sous-commandes séparées (pas des options de la commande principale, car leur forme ne
-rentre pas dans le modèle "un ou plusieurs fichiers → un format cible") :
-
-```bash
-anyform info photo.jpg
-anyform info musique.wav --json
-anyform diff avant.png apres.png
-anyform diff a.csv b.csv --out diff.txt
+```js
+process.env.LANG = 'en_US.UTF-8';
+const anyform = require('anyform');
 ```
 
-- **`info <file>`** : affiche les propriétés d'un fichier (dimensions, durée, débit estimé,
-  nombre de lignes/colonnes, nombre de sous-titres...) sans le modifier. `--json` pour une
-  sortie machine-readable plutôt que du texte aligné. La durée/résolution audio/vidéo vient
-  de `ffmpeg -i` (parsing de la sortie standard, comme `ffprobe`), pas d'un ffprobe séparé.
-- **`diff <fileA> <fileB>`** : compare deux fichiers du même type. Images → diff pixel par
-  pixel (PNG écrit sur disque, zones qui changent en rouge — `--out <path>` pour choisir où,
-  par défaut `<fileA>-diff.png`). Données/sous-titres → diff ligne à ligne façon `git diff`
-  (algorithme LCS), affichée sur stdout ou écrite dans `--out` si fourni ; au-delà de 3000
-  lignes, repli automatique sur une comparaison d'empreinte SHA-256 (le coût de la diff
-  deviendrait trop élevé). Reste (audio/vidéo/xlsx) : empreinte SHA-256 uniquement.
-
-## Installation
-
-```bash
-npm install
-npm link   # rend la commande `anyform` disponible globalement (optionnel)
-```
-
-## Utilisation
-
-```bash
-node bin/anyform.js image.svg -t png
-node bin/anyform.js *.png -t webp -o ./out --quality 80
-node bin/anyform.js photo.jpg -t svg
-node bin/anyform.js data.csv -t xlsx
-node bin/anyform.js musique.wav -t mp3
-node bin/anyform.js clip.mov -t mp4
-node bin/anyform.js photo.jpg -c -l strong
-node bin/anyform.js clip.mp4 --compress --level light -o ./out
-```
-
-Ou, après `npm link` :
-
-```bash
-anyform image.svg -t png
-```
-
-Options :
-
-- `-t, --to <format>` — format de sortie (incompatible avec `-c`)
-- `-c, --compress` — compresse le(s) fichier(s) sans changer de format (incompatible avec `-t`)
-- `-l, --level <level>` — niveau de compression : `light`, `medium` (par défaut), `strong`
-- `-o, --out-dir <dir>` — dossier de sortie (par défaut : à côté du fichier source)
-- `-q, --quality <number>` — qualité pour jpg/webp/avif (conversion)
-- `-d, --density <number>` — DPI utilisé pour rasteriser un SVG en entrée
-
-Il faut préciser exactement l'une des deux options `-t` ou `-c`.
+`anyform.t(key, vars)` et `anyform.getLanguage()` sont aussi exposés directement, au cas où
+l'appelant veut afficher ses propres messages dans la même langue.
 
 ## Structure
 
-- `lib/convert.js` — conversion d'images (sharp + potrace)
+- `index.js` — point d'entrée public, ré-exporte les fonctions de `lib/`
+- `lib/convert.js` — conversion/compression d'images (sharp + potrace)
 - `lib/data.js` — conversion de données (SheetJS)
 - `lib/media.js` — conversion et compression audio/vidéo (ffmpeg-static)
 - `lib/subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
 - `lib/inspect.js` — lecture des propriétés d'un fichier, sans le modifier
 - `lib/compare.js` — diff entre deux fichiers (image, texte ligne à ligne, ou empreinte)
-- `bin/anyform.js` — interface en ligne de commande (détection de type, routage,
-  sous-commandes `info`/`diff`)
+- `lib/i18n.js` — traduction FR/EN des messages d'erreur
