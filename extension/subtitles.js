@@ -186,7 +186,7 @@ function writeSubtitle(cues, targetExt) {
   if (targetExt === 'srt') return writeSrt(cues);
   if (targetExt === 'vtt') return writeVtt(cues);
   if (targetExt === 'ass' || targetExt === 'ssa') return writeAss(cues);
-  throw new Error(`Format de sous-titres non supporté : ${targetExt}`);
+  throw new Error(t('error.subtitleFormatUnsupported', { format: targetExt }));
 }
 
 const SUBTITLE_MIME = { srt: 'text/plain', vtt: 'text/vtt', ass: 'text/plain', ssa: 'text/plain' };
@@ -202,7 +202,7 @@ async function convertSubtitle(file, targetExt) {
   const cues = parseSubtitle(text, sourceExt);
 
   if (cues.length === 0) {
-    throw new Error('Aucun sous-titre reconnu dans ce fichier — vérifie que le format est valide.');
+    throw new Error(t('error.subtitleUnrecognized'));
   }
 
   const output = writeSubtitle(cues, targetExt);

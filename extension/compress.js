@@ -30,7 +30,7 @@ async function compressImage(file, level = 'medium') {
   const mime = COMPRESSIBLE_IMAGE_MIME[ext];
 
   if (!mime) {
-    throw new Error(`Format non compressible : .${ext || '?'}. Formats supportés : PNG, JPG, WebP, HEIC.`);
+    throw new Error(t('error.compressUnsupportedFormat', { ext: ext || '?' }));
   }
 
   const dataUrl = await readFileAsDataUrl(sourceBlob);
@@ -58,8 +58,8 @@ async function compressImage(file, level = 'medium') {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
-        if (!blob) return reject(new Error('Échec de la compression.'));
-        if (blob.type !== mime) return reject(new Error("Ton navigateur ne supporte pas la compression de ce format."));
+        if (!blob) return reject(new Error(t('error.compressFailedGeneric')));
+        if (blob.type !== mime) return reject(new Error(t('error.compressUnsupportedBrowser')));
         resolve(blob);
       },
       mime,
@@ -94,7 +94,7 @@ async function compressVideo(file, level, onProgress) {
   const buildArgs = VIDEO_COMPRESS_ARGS[ext];
 
   if (!buildArgs) {
-    throw new Error(`Format vidéo non compressible : .${ext}.`);
+    throw new Error(t('error.compressUnsupportedVideo', { ext }));
   }
 
   const ffmpeg = await loadFFmpeg(onProgress);
@@ -142,7 +142,7 @@ async function compressAudio(file, level, onProgress) {
   const buildArgs = AUDIO_COMPRESS_ARGS[ext];
 
   if (!buildArgs) {
-    throw new Error(`Format audio non compressible : .${ext}.`);
+    throw new Error(t('error.compressUnsupportedAudio', { ext }));
   }
 
   const ffmpeg = await loadFFmpeg(onProgress);
