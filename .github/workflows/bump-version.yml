@@ -1,4 +1,4 @@
-name: Incrémenter la version
+name: Incrémenter la version et publier sur le Web Store
 
 on:
   push:
@@ -7,6 +7,12 @@ on:
 permissions:
   contents: write
   actions: write
+
+# Empêche deux runs de tourner en même temps : sans ça, deux publications rapprochées
+# pourraient chacune incrémenter la version à partir du même manifest.json de départ et se
+# marcher dessus.
+concurrency:
+  group: bump-version-extension
 
 jobs:
   bump:
@@ -39,6 +45,44 @@ jobs:
           git add extension/manifest.json extension/popup.html
           git commit -m "chore: bump version to ${NEW_VERSION} [skip ci]"
           git push
+
+      - name: Empaqueter l'extension
+        run: (cd extension && zip -r ../extension.zip . -x "README.md")
+
+      - name: Publier sur le Chrome Web Store
+        env:
+          CWS_ITEM_ID: emkgiblipknkbnncdfbmnhhpgpmgaeoe
+        run: |
+          ACCESS_TOKEN=$(curl -s -X POST https://oauth2.googleapis.com/token \
+            -d client_id="${{ secrets.CWS_CLIENT_ID }}" \
+            -d client_secret="${{ secrets.CWS_CLIENT_SECRET }}" \
+            -d refresh_token="${{ secrets.CWS_REFRESH_TOKEN }}" \
+            -d grant_type=refresh_token | jq -r '.access_token')
+
+          UPLOAD_RESPONSE=$(curl -s -X PUT \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "x-goog-api-version: 2" \
+            -H "Content-Type: application/zip" \
+            -T extension.zip \
+            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${CWS_ITEM_ID}")
+          echo "$UPLOAD_RESPONSE"
+          UPLOAD_STATE=$(echo "$UPLOAD_RESPONSE" | jq -r '.uploadState')
+          if [ "$UPLOAD_STATE" != "SUCCESS" ]; then
+            echo "::error::Échec de l'upload sur le Chrome Web Store (uploadState: $UPLOAD_STATE)"
+            exit 1
+          fi
+
+          PUBLISH_RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "x-goog-api-version: 2" \
+            -H "Content-Length: 0" \
+            "https://www.googleapis.com/chromewebstore/v1.1/items/${CWS_ITEM_ID}/publish")
+          echo "$PUBLISH_RESPONSE"
+          PUBLISH_STATUS=$(echo "$PUBLISH_RESPONSE" | jq -r '.status[0]')
+          if [ "$PUBLISH_STATUS" != "OK" ]; then
+            echo "::error::Échec de la publication sur le Chrome Web Store (status: $PUBLISH_STATUS)"
+            exit 1
+          fi
 
       - name: Supprimer les anciens runs du workflow (garder les 10 derniers)
         env:
