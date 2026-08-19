@@ -24,6 +24,8 @@ const IMAGE_SCALE_BY_LEVEL = { light: 1, medium: 0.85, strong: 0.65 };
  * @param {'light'|'medium'|'strong'} level
  */
 async function compressImage(file, level = 'medium') {
+  if (isSvgFile(file)) return compressSvg(file, level);
+
   const heic = isHeicFile(file);
   const sourceBlob = heic ? await heicToPngBlob(file) : file;
   const ext = heic ? 'png' : extensionOf(file).replace(/^jpeg$/, 'jpg');
@@ -66,6 +68,44 @@ async function compressImage(file, level = 'medium') {
       quality
     );
   });
+}
+
+// Minification SVG "maison" : pas d'équivalent complet à un outil comme SVGO, mais les
+// gains les plus sûrs (commentaires, espaces, précision décimale, éléments purement
+// descriptifs sans effet visuel) sans risquer de casser le rendu.
+function minifySvgText(text, level) {
+  // La déclaration XML (ex. <?xml version="1.0" encoding="UTF-8"?>) est mise de côté avant
+  // la réduction de précision décimale : "1.0" s'y ferait sinon arrondir en "1", invalide.
+  const xmlDeclMatch = /^\s*<\?xml[^>]*\?>\s*/.exec(text);
+  const xmlDecl = xmlDeclMatch ? xmlDeclMatch[0].trim() : '';
+  let out = xmlDeclMatch ? text.slice(xmlDeclMatch[0].length) : text;
+
+  out = out.replace(/<!--[\s\S]*?-->/g, '');
+  out = out.replace(/>\s+</g, '><').replace(/[ \t\r\n]+/g, ' ').trim();
+
+  const precision = level === 'strong' ? 1 : level === 'medium' ? 2 : 3;
+  out = out.replace(/-?\d+\.\d+/g, (m) => String(parseFloat(parseFloat(m).toFixed(precision))));
+
+  if (level !== 'light') {
+    out = out
+      .replace(/<title>[\s\S]*?<\/title>/gi, '')
+      .replace(/<desc>[\s\S]*?<\/desc>/gi, '')
+      .replace(/<metadata>[\s\S]*?<\/metadata>/gi, '');
+  }
+  if (level === 'strong') {
+    out = out.replace(/<g[^>]*>\s*<\/g>/gi, '');
+  }
+  return xmlDecl ? xmlDecl + out : out;
+}
+
+/**
+ * Compresse un SVG en le minifiant (reste un SVG, pas de rasterisation).
+ * @param {File} file
+ * @param {'light'|'medium'|'strong'} level
+ */
+async function compressSvg(file, level = 'medium') {
+  const text = await readFileAsText(file);
+  return new Blob([minifySvgText(text, level)], { type: 'image/svg+xml' });
 }
 
 const VIDEO_CRF_BY_LEVEL = { light: 26, medium: 30, strong: 35 };

@@ -87,7 +87,7 @@ function getOutputFormatOptions() {
 }
 
 const COMPRESS_FORMATS = {
-  image: ['png', 'jpg', 'webp', 'heic'],
+  image: ['png', 'jpg', 'webp', 'heic', 'svg'],
   audio: ['wav', 'mp3', 'ogg', 'm4a', 'flac', 'aac', 'wma', 'opus'],
   video: ['mp4', 'webm', 'mov', 'mkv', 'avi', 'flv', 'ogv'],
 };
