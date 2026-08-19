@@ -48,6 +48,8 @@ function detectCategory(filePath) {
 // compressOne, qui n'ont rien à en faire.
 const INSPECT_ONLY_EXT = { pdf: 'document', zip: 'archive', ttf: 'font', otf: 'font', woff: 'font', woff2: 'font' };
 
+// Catégorie utilisée par la commande "info" : reprend detectCategory (formats convertibles)
+// et y ajoute les formats inspectables uniquement (voir INSPECT_ONLY_EXT ci-dessus).
 function detectInspectCategory(filePath) {
   const ext = path.extname(filePath).slice(1).toLowerCase();
   return detectCategory(filePath) || INSPECT_ONLY_EXT[ext] || null;
@@ -60,6 +62,16 @@ function normalizeExt(ext) {
   return ext === 'jpeg' ? 'jpg' : ext;
 }
 
+/**
+ * Convertit un fichier vers un autre format (contraire de compressOne, qui garde le format
+ * d'origine). Route vers le module lib/* correspondant à la catégorie détectée depuis
+ * l'extension source, écrit le résultat à côté du fichier source (ou dans --out-dir) sous
+ * le même nom de base avec la nouvelle extension.
+ * @param {string} filePath
+ * @param {string} target - format de sortie normalisé (ex. 'png', 'mp3')
+ * @param {object} options - options Commander (quality, density, outDir...)
+ * @returns {Promise<string>} chemin du fichier de sortie
+ */
 async function convertOne(filePath, target, options) {
   const category = detectCategory(filePath);
   if (!category) {

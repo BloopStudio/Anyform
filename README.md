@@ -122,5 +122,6 @@ Il faut préciser exactement l'une des deux options `-t` ou `-c`.
 - `lib/inspect.js` — lecture des propriétés d'un fichier, sans le modifier (images,
   audio/vidéo, données, sous-titres, PDF, ZIP, polices)
 - `lib/compare.js` — diff entre deux fichiers (image, texte ligne à ligne, ou empreinte)
+- `lib/i18n.js` — traduction FR/EN des messages du CLI (détection de langue au démarrage)
 - `bin/anyform.js` — interface en ligne de commande (détection de type, routage,
   sous-commandes `info`/`diff`)
