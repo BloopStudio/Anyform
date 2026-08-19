@@ -24,6 +24,7 @@ const STRINGS = {
   'category.audio': { fr: 'Audio', en: 'Audio' },
   'category.video': { fr: 'Vidéo', en: 'Video' },
   'category.subtitle': { fr: 'Sous-titres', en: 'Subtitles' },
+  'category.document': { fr: 'Document', en: 'Document' },
   'field.sourceFormat': { fr: "Format d'entrée", en: 'Input format' },
   'field.outputFormat': { fr: 'Format de sortie', en: 'Output format' },
   'field.compressionLevel': { fr: 'Niveau de compression', en: 'Compression level' },

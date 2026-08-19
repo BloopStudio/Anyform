@@ -90,6 +90,7 @@ const COMPRESS_FORMATS = {
   image: ['png', 'jpg', 'webp', 'heic', 'svg'],
   audio: ['wav', 'mp3', 'ogg', 'm4a', 'flac', 'aac', 'wma', 'opus'],
   video: ['mp4', 'webm', 'mov', 'mkv', 'avi', 'flv', 'ogv'],
+  document: ['pdf'],
 };
 
 const modeTabs = document.getElementById('modeTabs');
@@ -405,8 +406,13 @@ function setActiveTab(tabsEl, datasetKey, value) {
 function onCategoryChange(category) {
   currentCategoryValue = category;
   setActiveTab(categoryTabs, 'category', category);
-  populateSelect(sourceFormatSelect, INPUT_FORMAT_OPTIONS[category]);
-  refreshOutputOptions();
+  // "document" n'a pas d'entrée dans INPUT_FORMAT_OPTIONS (compress-only, rien à
+  // convertir) : pas de format d'entrée/sortie à peupler pour elle, la ligne correspondante
+  // reste de toute façon cachée en mode Compresseur (voir onModeChange).
+  if (INPUT_FORMAT_OPTIONS[category]) {
+    populateSelect(sourceFormatSelect, INPUT_FORMAT_OPTIONS[category]);
+    refreshOutputOptions();
+  }
   syncUiForCategory();
 }
 
@@ -449,8 +455,12 @@ function onModeChange(mode) {
     refreshOutputOptions();
   }
 
+  // "document" (PDF) n'existe que côté Compresseur : pas dans INPUT_FORMAT_OPTIONS (rien à
+  // convertir), donc cet onglet doit rester caché en mode Convertisseur — d'où le test sur
+  // INPUT_FORMAT_OPTIONS plutôt qu'un simple "toujours visible hors compression".
   for (const tab of categoryTabs.querySelectorAll('.tab')) {
-    tab.hidden = compressing && !COMPRESS_FORMATS[tab.dataset.category];
+    const category = tab.dataset.category;
+    tab.hidden = compressing ? !COMPRESS_FORMATS[category] : !INPUT_FORMAT_OPTIONS[category];
   }
 
   if (comparing) {
@@ -803,6 +813,7 @@ async function runConversion(file, category, format, level) {
       showProgress(t('status.loadingVideoEngine'));
       return compressVideo(file, level, (percent) => updateProgress(percent));
     }
+    if (category === 'document') return compressPdf(file, level);
     throw new Error(t('error.categoryNotSupportedCompress'));
   }
 
