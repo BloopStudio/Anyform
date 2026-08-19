@@ -6,6 +6,7 @@ const { Command } = require('commander');
 const {
   convertImage,
   compressImage,
+  compressPdf,
   SUPPORTED_OUTPUT_FORMATS: IMAGE_FORMATS,
   COMPRESSIBLE_IMAGE_FORMATS,
 } = require('../lib/convert');
@@ -105,13 +106,16 @@ async function convertOne(filePath, target, options) {
 }
 
 /**
- * Compresse un fichier image, audio ou vidéo en conservant son format d'origine (contraire
- * de convertOne, qui change de format). Les données et sous-titres n'ont pas de notion de
- * "réduire la taille en gardant le même format" et ne sont donc jamais acceptés ici.
+ * Compresse un fichier image, audio, vidéo ou PDF en conservant son format d'origine
+ * (contraire de convertOne, qui change de format). Les données et sous-titres n'ont pas de
+ * notion de "réduire la taille en gardant le même format" et ne sont donc jamais acceptés
+ * ici. Le PDF n'est pas dans CATEGORY_EXT (pas convertible par Anyform, voir
+ * detectInspectCategory) mais est bien compressible, d'où le test séparé sur l'extension.
  */
 async function compressOne(filePath, level, options) {
-  const category = detectCategory(filePath);
-  if (category !== 'image' && category !== 'audio' && category !== 'video') {
+  const rawExt = path.extname(filePath).slice(1).toLowerCase();
+  const category = rawExt === 'pdf' ? 'document' : detectCategory(filePath);
+  if (category !== 'image' && category !== 'audio' && category !== 'video' && category !== 'document') {
     throw new Error(t('cli.errCompressUnsupportedType', { file: filePath }));
   }
 
@@ -130,6 +134,14 @@ async function compressOne(filePath, level, options) {
     return outPath;
   }
 
+  if (category === 'document') {
+    const inputBuffer = fs.readFileSync(filePath);
+    const result = await compressPdf(inputBuffer, level);
+    const outPath = path.join(outDir, `${baseName}-compresse.pdf`);
+    fs.writeFileSync(outPath, result);
+    return outPath;
+  }
+
   // Audio et vidéo : contrairement à l'image, le format de sortie est toujours identique
   // à l'entrée (compressAudio/compressVideo réencodent avec le même codec/conteneur).
   const ext = normalizeExt(path.extname(filePath).slice(1).toLowerCase());
@@ -145,7 +157,7 @@ async function compressOne(filePath, level, options) {
 const ALL_FORMATS = [
   ...new Set([...IMAGE_FORMATS, ...DATA_FORMATS, ...AUDIO_FORMATS, ...VIDEO_FORMATS, ...SUBTITLE_FORMATS]),
 ];
-const COMPRESS_FORMATS = [...new Set([...COMPRESSIBLE_IMAGE_FORMATS, ...AUDIO_FORMATS, ...VIDEO_FORMATS])];
+const COMPRESS_FORMATS = [...new Set([...COMPRESSIBLE_IMAGE_FORMATS, ...AUDIO_FORMATS, ...VIDEO_FORMATS, 'pdf'])];
 
 const { version } = require('../package.json');
 
