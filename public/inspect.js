@@ -538,6 +538,91 @@ function channelsLabel(n) {
   return t('inspect.channelsN', { n });
 }
 
+// Décode un texte de frame ID3 selon son octet d'encodage (premier octet de la frame) :
+// 0 = Latin-1, 1 = UTF-16 avec BOM, 2 = UTF-16BE sans BOM, 3 = UTF-8.
+function id3DecodeText(bytes, encoding) {
+  let text;
+  if (encoding === 1) {
+    const hasBom = bytes.length >= 2 && ((bytes[0] === 0xff && bytes[1] === 0xfe) || (bytes[0] === 0xfe && bytes[1] === 0xff));
+    const little = !hasBom || bytes[0] === 0xff;
+    text = new TextDecoder(little ? 'utf-16le' : 'utf-16be').decode(hasBom ? bytes.slice(2) : bytes);
+  } else if (encoding === 2) {
+    text = new TextDecoder('utf-16be').decode(bytes);
+  } else if (encoding === 3) {
+    text = new TextDecoder('utf-8').decode(bytes);
+  } else {
+    text = new TextDecoder('latin1').decode(bytes);
+  }
+  return text.replace(/ +$/, '').trim();
+}
+
+function id3ReadSyncsafeInt(view, offset) {
+  return (view.getUint8(offset) << 21) | (view.getUint8(offset + 1) << 14) | (view.getUint8(offset + 2) << 7) | view.getUint8(offset + 3);
+}
+
+// Parcourt les frames ID3v2 (v2.3/v2.4 — la grande majorité des MP3 actuels ; v2.2, plus
+// ancienne et rare avec ses ID de 3 caractères, n'est volontairement pas gérée). Ne lit que
+// les frames texte utiles (titre, artiste, album, année, genre) plus la présence d'une
+// pochette (APIC), sans extraire l'image elle-même.
+function id3ParseV2(buffer) {
+  if (buffer.byteLength < 10) return null;
+  const view = new DataView(buffer);
+  if (String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2)) !== 'ID3') return null;
+  const majorVersion = view.getUint8(3);
+  const tagSize = id3ReadSyncsafeInt(view, 6);
+  const end = Math.min(10 + tagSize, buffer.byteLength);
+
+  const tags = {};
+  let offset = 10;
+  while (offset + 10 <= end) {
+    const id = String.fromCharCode(view.getUint8(offset), view.getUint8(offset + 1), view.getUint8(offset + 2), view.getUint8(offset + 3));
+    if (id === '\0\0\0\0') break;
+    const frameSize = majorVersion >= 4 ? id3ReadSyncsafeInt(view, offset + 4) : view.getUint32(offset + 4, false);
+    const dataStart = offset + 10;
+    if (frameSize <= 0 || dataStart + frameSize > buffer.byteLength) break;
+    const frameBytes = new Uint8Array(buffer, dataStart, frameSize);
+
+    if (id[0] === 'T' && id !== 'TXXX' && frameBytes.length > 1) {
+      tags[id] = id3DecodeText(frameBytes.slice(1), frameBytes[0]);
+    } else if (id === 'APIC' && frameBytes.length > 1) {
+      let p = 1;
+      let mime = '';
+      while (p < frameBytes.length && frameBytes[p] !== 0) { mime += String.fromCharCode(frameBytes[p]); p++; }
+      tags.__coverMime = mime || 'image/*';
+    }
+    offset = dataStart + frameSize;
+  }
+  return tags;
+}
+
+// Repli ID3v1 (128 derniers octets, format fixe) pour les MP3 sans ID3v2 ou avec des champs
+// manquants — ancien mais encore présent, notamment sur de vieux fichiers.
+function id3ParseV1(buffer) {
+  if (buffer.byteLength < 128) return null;
+  const tail = new Uint8Array(buffer, buffer.byteLength - 128, 128);
+  if (String.fromCharCode(tail[0], tail[1], tail[2]) !== 'TAG') return null;
+  const field = (start, len) => new TextDecoder('latin1').decode(tail.slice(start, start + len)).replace(/ +$/, '').trim();
+  return { TIT2: field(3, 30), TPE1: field(33, 30), TALB: field(63, 30), TYER: field(93, 4) };
+}
+
+async function inspectId3Items(file) {
+  const buffer = await file.arrayBuffer();
+  const v2 = id3ParseV2(buffer) || {};
+  const v1 = id3ParseV1(buffer) || {};
+  const items = [];
+  const title = v2.TIT2 || v1.TIT2;
+  const artist = v2.TPE1 || v1.TPE1;
+  const album = v2.TALB || v1.TALB;
+  const year = v2.TYER || v2.TDRC || v1.TYER;
+  if (title) items.push({ label: t('inspect.id3.title'), value: title });
+  if (artist) items.push({ label: t('inspect.id3.artist'), value: artist });
+  if (album) items.push({ label: t('inspect.id3.album'), value: album });
+  if (year) items.push({ label: t('inspect.id3.year'), value: year });
+  if (v2.TCON) items.push({ label: t('inspect.id3.genre'), value: v2.TCON });
+  if (v2.__coverMime) items.push({ label: t('inspect.id3.cover'), value: t('inspect.id3.coverPresent', { mime: v2.__coverMime }) });
+  return items;
+}
+
 async function inspectAudio(file) {
   const meta = await readMediaMetadata(file, 'audio');
   const items = [{ label: t('inspect.duration'), value: formatDuration(meta.duration) }];
@@ -550,7 +635,67 @@ async function inspectAudio(file) {
     items.push({ label: t('inspect.channels'), value: channelsLabel(signal.channels) });
     items.push({ label: t('inspect.sampleRate'), value: `${signal.sampleRate} Hz` });
   }
+  if (extensionOf(file) === 'mp3') items.push(...(await inspectId3Items(file)));
   return items;
+}
+
+const MP4_CODEC_NAMES = {
+  avc1: 'H.264 (AVC)',
+  avc3: 'H.264 (AVC)',
+  hev1: 'H.265 (HEVC)',
+  hvc1: 'H.265 (HEVC)',
+  vp09: 'VP9',
+  av01: 'AV1',
+  mp4v: 'MPEG-4 Visual',
+};
+
+// Parcourt les box ISO-BMFF (moov > trak > mdia > minf > stbl > stsd) pour trouver le codec
+// vidéo — sans décoder aucune image, juste la structure du conteneur. Ne cible que la piste
+// dont le handler (mdia > hdlr) vaut "vide" : un stsd existe aussi pour la piste audio, avec
+// un fourcc différent, qu'on doit explicitement éviter de retourner par erreur.
+function findMp4VideoCodec(buffer) {
+  const view = new DataView(buffer);
+
+  function readBoxes(start, end) {
+    const boxes = [];
+    let offset = start;
+    while (offset + 8 <= end) {
+      let size = view.getUint32(offset, false);
+      const type = String.fromCharCode(view.getUint8(offset + 4), view.getUint8(offset + 5), view.getUint8(offset + 6), view.getUint8(offset + 7));
+      let headerSize = 8;
+      if (size === 1) {
+        if (offset + 16 > end) break;
+        size = view.getUint32(offset + 8, false) * 2 ** 32 + view.getUint32(offset + 12, false);
+        headerSize = 16;
+      }
+      if (size < headerSize) break;
+      boxes.push({ type, start: offset + headerSize, end: offset + size });
+      offset += size;
+    }
+    return boxes;
+  }
+
+  const findBox = (boxes, type) => boxes.find((b) => b.type === type);
+
+  const moov = findBox(readBoxes(0, buffer.byteLength), 'moov');
+  if (!moov) return null;
+  for (const trak of readBoxes(moov.start, moov.end).filter((b) => b.type === 'trak')) {
+    const mdia = findBox(readBoxes(trak.start, trak.end), 'mdia');
+    if (!mdia) continue;
+    const mdiaBoxes = readBoxes(mdia.start, mdia.end);
+    const hdlr = findBox(mdiaBoxes, 'hdlr');
+    if (!hdlr || hdlr.end - hdlr.start < 12) continue;
+    const handlerType = String.fromCharCode(view.getUint8(hdlr.start + 8), view.getUint8(hdlr.start + 9), view.getUint8(hdlr.start + 10), view.getUint8(hdlr.start + 11));
+    if (handlerType !== 'vide') continue;
+    const minf = findBox(mdiaBoxes, 'minf');
+    const stbl = minf && findBox(readBoxes(minf.start, minf.end), 'stbl');
+    const stsd = stbl && findBox(readBoxes(stbl.start, stbl.end), 'stsd');
+    if (!stsd) continue;
+    const entryOffset = stsd.start + 8; // version(1)+flags(3)+entryCount(4), puis size(4)+fourcc(4) de la 1ère entrée
+    if (entryOffset + 8 > stsd.end) continue;
+    return String.fromCharCode(view.getUint8(entryOffset + 4), view.getUint8(entryOffset + 5), view.getUint8(entryOffset + 6), view.getUint8(entryOffset + 7));
+  }
+  return null;
 }
 
 async function inspectVideo(file) {
@@ -565,6 +710,19 @@ async function inspectVideo(file) {
   if (Number.isFinite(meta.duration) && meta.duration > 0) {
     const kbps = Math.round((file.size * 8) / meta.duration / 1000);
     items.push({ label: t('inspect.avgBitrate'), value: `${kbps} kbps` });
+  }
+  // Limité aux conteneurs ISO-BMFF (MP4/MOV, même famille de box) : WebM/MKV/AVI/FLV/OGV
+  // utiliseraient un tout autre format de conteneur (EBML pour WebM/MKV notamment), non
+  // couvert ici — le champ est simplement omis pour ces formats plutôt que d'échouer.
+  const ext = extensionOf(file);
+  if (ext === 'mp4' || ext === 'mov') {
+    try {
+      const codec = findMp4VideoCodec(await file.arrayBuffer());
+      if (codec) items.push({ label: t('inspect.videoCodec'), value: MP4_CODEC_NAMES[codec] || codec });
+    } catch {
+      // Structure de conteneur inattendue : on n'affiche juste pas le codec plutôt que
+      // de faire planter le reste de l'inspection.
+    }
   }
   return items;
 }
@@ -654,11 +812,142 @@ async function inspectSubtitle(file) {
   return items;
 }
 
+const SFNT_VERSION_OTTO = 0x4f54544f; // 'OTTO' : contours PostScript/CFF plutôt que TrueType
+
+// Table des index de table sfnt (TTF/OTF) : 12 octets d'en-tête (version + nombre de
+// tables...) puis un enregistrement de 16 octets par table (tag, checksum, offset, taille).
+function readSfntTables(view, base) {
+  const numTables = view.getUint16(base + 4, false);
+  const tables = {};
+  for (let i = 0; i < numTables; i++) {
+    const rec = base + 12 + i * 16;
+    const tag = String.fromCharCode(view.getUint8(rec), view.getUint8(rec + 1), view.getUint8(rec + 2), view.getUint8(rec + 3));
+    tables[tag] = { offset: view.getUint32(rec + 8, false), length: view.getUint32(rec + 12, false) };
+  }
+  return tables;
+}
+
+// Lit le nom de famille (nameID 1) et le sous-style (nameID 2) dans la table 'name' —
+// préfère la plate-forme Windows (3, Unicode BMP, encodé en UTF-16BE) si présente, sinon
+// prend la première entrée trouvée (souvent Macintosh, en Latin-1).
+function readFontNameTable(view, buffer, tableOffset) {
+  const count = view.getUint16(tableOffset + 2, false);
+  const stringAreaOffset = tableOffset + view.getUint16(tableOffset + 4, false);
+  const found = {};
+  const foundWin = {};
+  for (let i = 0; i < count; i++) {
+    const rec = tableOffset + 6 + i * 12;
+    const platformID = view.getUint16(rec, false);
+    const nameID = view.getUint16(rec + 6, false);
+    if (nameID !== 1 && nameID !== 2) continue;
+    const length = view.getUint16(rec + 8, false);
+    const strOffset = view.getUint16(rec + 10, false);
+    const bytes = new Uint8Array(buffer, stringAreaOffset + strOffset, length);
+    const text = (platformID === 3 || platformID === 0) ? new TextDecoder('utf-16be').decode(bytes) : new TextDecoder('latin1').decode(bytes);
+    if (!found[nameID]) found[nameID] = text;
+    if (platformID === 3 && !foundWin[nameID]) foundWin[nameID] = text;
+  }
+  return { family: foundWin[1] || found[1] || null, subfamily: foundWin[2] || found[2] || null };
+}
+
+function fontItemsFromTables(view, buffer, tables, formatLabel, outlineFormat) {
+  const items = [
+    { label: t('inspect.font.format'), value: formatLabel },
+    { label: t('inspect.font.outlineFormat'), value: outlineFormat },
+  ];
+  if (tables.name) {
+    const { family, subfamily } = readFontNameTable(view, buffer, tables.name.offset);
+    if (family) items.push({ label: t('inspect.font.family'), value: subfamily ? `${family} (${subfamily})` : family });
+  }
+  if (tables.maxp) items.push({ label: t('inspect.font.glyphCount'), value: String(view.getUint16(tables.maxp.offset + 4, false)) });
+  items.push({ label: t('inspect.font.tables'), value: String(Object.keys(tables).length) });
+  return items;
+}
+
+function inspectSfntFont(buffer) {
+  const view = new DataView(buffer);
+  const version = view.getUint32(0, false);
+  const isCff = version === SFNT_VERSION_OTTO;
+  const tables = readSfntTables(view, 0);
+  return fontItemsFromTables(view, buffer, tables, isCff ? 'OpenType' : 'TrueType', isCff ? 'CFF' : 'TrueType');
+}
+
+// Décompresse un flux zlib (RFC 1950 — c'est le format "deflate" du Streams API du
+// navigateur, à ne pas confondre avec "deflate-raw"/RFC 1951) : format utilisé par les
+// tables WOFF individuellement compressées.
+async function inflateZlib(bytes) {
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
+  return new Response(stream).arrayBuffer();
+}
+
+// WOFF : header fixe de 44 octets, puis un répertoire de tables de 20 octets chacune (tag,
+// offset, taille compressée, taille d'origine). Chaque table est individuellement compressée
+// en zlib (sauf si taille compressée = taille d'origine, auquel cas stockée telle quelle) —
+// on ne décompresse que les tables utiles (name, maxp), pas la police entière.
+async function inspectWoffFont(buffer) {
+  const view = new DataView(buffer);
+  const flavor = view.getUint32(4, false);
+  const numTables = view.getUint16(12, false);
+  const dir = {};
+  for (let i = 0; i < numTables; i++) {
+    const rec = 44 + i * 20;
+    const tag = String.fromCharCode(view.getUint8(rec), view.getUint8(rec + 1), view.getUint8(rec + 2), view.getUint8(rec + 3));
+    dir[tag] = { offset: view.getUint32(rec + 4, false), compLength: view.getUint32(rec + 8, false), origLength: view.getUint32(rec + 12, false) };
+  }
+
+  async function extractTable(tag) {
+    const entry = dir[tag];
+    if (!entry) return null;
+    if (entry.compLength >= entry.origLength) return buffer.slice(entry.offset, entry.offset + entry.origLength);
+    return inflateZlib(new Uint8Array(buffer, entry.offset, entry.compLength));
+  }
+
+  const items = [
+    { label: t('inspect.font.format'), value: 'WOFF' },
+    { label: t('inspect.font.outlineFormat'), value: flavor === SFNT_VERSION_OTTO ? 'CFF' : 'TrueType' },
+    { label: t('inspect.font.tables'), value: String(numTables) },
+  ];
+
+  const nameBuf = await extractTable('name');
+  if (nameBuf) {
+    const { family, subfamily } = readFontNameTable(new DataView(nameBuf), nameBuf, 0);
+    if (family) items.push({ label: t('inspect.font.family'), value: subfamily ? `${family} (${subfamily})` : family });
+  }
+  const maxpBuf = await extractTable('maxp');
+  if (maxpBuf) items.push({ label: t('inspect.font.glyphCount'), value: String(new DataView(maxpBuf).getUint16(4, false)) });
+
+  return items;
+}
+
+// WOFF2 compresse l'intégralité de la police d'un bloc en Brotli (pas table par table comme
+// WOFF), et réorganise même certaines tables (glyf/loca) pour mieux compresser — décoder ça
+// sans une vraie dépendance WOFF2 serait un morceau largement plus gros que le reste de
+// l'Inspecteur. On se limite donc aux infos lisibles dans l'en-tête, en clair.
+function inspectWoff2Font(buffer) {
+  const view = new DataView(buffer);
+  const flavor = view.getUint32(4, false);
+  return [
+    { label: t('inspect.font.format'), value: 'WOFF2' },
+    { label: t('inspect.font.outlineFormat'), value: flavor === SFNT_VERSION_OTTO ? 'CFF' : 'TrueType' },
+    { label: t('inspect.font.tables'), value: String(view.getUint16(12, false)) },
+    { label: t('inspect.font.note'), value: t('inspect.font.woff2LimitedNote') },
+  ];
+}
+
+async function inspectFont(file) {
+  const buffer = await file.arrayBuffer();
+  if (buffer.byteLength < 4) return [];
+  const signature = new DataView(buffer).getUint32(0, false);
+  if (signature === 0x774f4646) return inspectWoffFont(buffer); // 'wOFF'
+  if (signature === 0x774f4632) return inspectWoff2Font(buffer); // 'wOF2'
+  return inspectSfntFont(buffer); // sfnt direct : TTF (0x00010000/'true') ou OTF ('OTTO')
+}
+
 /**
  * Inspecte un fichier et retourne la liste de ses propriétés (label/valeur), en plus des
  * informations génériques communes à tous les fichiers (nom, taille, dernière modification).
  * @param {File} file
- * @param {'image'|'data'|'audio'|'video'|'subtitle'|'document'|'archive'} category
+ * @param {'image'|'data'|'audio'|'video'|'subtitle'|'document'|'archive'|'font'} category
  * @returns {Promise<Array<{label: string, value: string}>>}
  */
 async function inspectFile(file, category) {
@@ -676,6 +965,7 @@ async function inspectFile(file, category) {
   else if (category === 'subtitle') specific = await inspectSubtitle(file);
   else if (category === 'document') specific = await inspectPdf(file);
   else if (category === 'archive') specific = await inspectZip(file);
+  else if (category === 'font') specific = await inspectFont(file);
 
   return [...generic, ...specific];
 }
