@@ -5,9 +5,9 @@ Les autres façons d'utiliser Anyform :
 
 | Branche | Description |
 | --- | --- |
-| [`web-converter`](https://github.com/TheDEMON78/Anyform/tree/web-converter) | App web, déployée sur [thedemon78.github.io/Anyform](https://thedemon78.github.io/Anyform/) |
-| [`cli-converter`](https://github.com/TheDEMON78/Anyform/tree/cli-converter) | Outil en ligne de commande |
-| [`browser-extension`](https://github.com/TheDEMON78/Anyform/tree/browser-extension) | Extension Chrome/Edge |
+| [`web-converter`](https://github.com/BloopStudio/Anyform/tree/web-converter) | App web, déployée sur [bloopstudio.github.io/Anyform](https://bloopstudio.github.io/Anyform/) |
+| [`cli-converter`](https://github.com/BloopStudio/Anyform/tree/cli-converter) | Outil en ligne de commande |
+| [`browser-extension`](https://github.com/BloopStudio/Anyform/tree/browser-extension) | Extension Chrome/Edge |
 
 ## App de bureau (Electron)
 
@@ -49,7 +49,7 @@ commit *avant* que le job `build` ne parte construire les installateurs à parti
 nouvelle HEAD — les `.exe`/`.dmg`/`.AppImage` générés portent donc toujours le numéro de
 version qui vient d'être incrémenté, pas l'ancien.
 
-Chaque build publie une [release GitHub](https://github.com/TheDEMON78/Anyform/releases)
+Chaque build publie une [release GitHub](https://github.com/BloopStudio/Anyform/releases)
 taguée avec le numéro de version (`v1.0.7`, `v1.0.8`...), les fichiers portant eux aussi la
 version dans leur nom (`Anyform-1.0.7-win-x64.exe`, etc.), la plus récente étant marquée
 **Latest**. À la fin de chaque build, toute release dont le patch est inférieur à
