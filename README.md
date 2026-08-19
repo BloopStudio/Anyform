@@ -20,7 +20,8 @@ externe, même pour la vidéo/l'audio (ffmpeg.wasm) ou le décodage HEIC.
 
 Il suffit d'ouvrir `public/index.html`, ou de visiter la page déployée sur GitHub Pages, de
 choisir le mode (**Convertisseur**, **Compresseur**, **Inspecteur** ou **Comparateur**), le
-type de fichier (onglets Image/Données/Audio/Vidéo/Sous-titres, quand le mode en a besoin),
+type de fichier (onglets Image/Données/Audio/Vidéo/Sous-titres/Document, quand le mode en a
+besoin),
 déposer un ou plusieurs fichiers, choisir le format cible, et cliquer sur "Convertir". Une
 barre de progression suit les conversions audio/vidéo (moteur ffmpeg.wasm), et le résultat
 s'affiche dans une carte dédiée avec téléchargement et bouton pour recommencer. Le thème
@@ -43,18 +44,31 @@ résultat).
 ### Quatre modes
 
 - **Convertisseur** : change le format d'un fichier (formats ci-dessous).
-- **Compresseur** : réduit la taille d'un fichier **sans changer son format** — limité aux
-  images (PNG, JPG, WebP, HEIC — GIF/BMP exclus, Canvas ne sait pas les ré-encoder dans le
-  navigateur), à l'audio et aux vidéos, avec un niveau Léger/Moyen/Fort. Images : qualité
-  réduite pour JPG/WebP, redimensionnement pour PNG (pas de curseur de qualité). Audio :
-  bitrate réduit pour les formats compressés, `-compression_level` pour FLAC (sans perte),
-  fréquence d'échantillonnage réduite pour WAV (PCM brut, pas de notion de bitrate). Vidéo :
-  CRF réduit sur le même codec/conteneur, audio inchangé. Voir `public/compress.js`.
+- **Compresseur** : réduit la taille d'un fichier **sans changer son format** — images (PNG,
+  JPG, WebP, HEIC, SVG — GIF/BMP exclus, Canvas ne sait pas les ré-encoder dans le
+  navigateur), audio, vidéos et PDF, avec un niveau Léger/Moyen/Fort. Images raster : qualité
+  réduite pour JPG/WebP, redimensionnement pour PNG (pas de curseur de qualité). SVG :
+  minification maison (commentaires, espaces, précision décimale des nombres, title/desc/
+  metadata, groupes vides supprimés selon le niveau) — pas un équivalent complet à SVGO.
+  Audio : bitrate réduit pour les formats compressés, `-compression_level` pour FLAC (sans
+  perte), fréquence d'échantillonnage réduite pour WAV (PCM brut, pas de notion de bitrate).
+  Vidéo : CRF réduit sur le même codec/conteneur, audio inchangé. PDF : reconstruction
+  objet par objet, ne touche qu'aux images JPEG (DCTDecode) intégrées, recompressées à la
+  qualité du niveau choisi ; se contente de renvoyer le fichier tel quel s'il utilise des
+  flux d'objets compressés (`/ObjStm`, PDF récents) ou des générations d'objet non nulles,
+  plutôt que de risquer un fichier corrompu. Voir `public/compress.js`.
 - **Inspecteur** : lit les propriétés d'un fichier (dimensions, durée, nombre de
   lignes/colonnes, nombre de sous-titres...) sans le modifier ni produire de fichier de
   sortie. Volontairement léger : la durée/résolution audio/vidéo vient des métadonnées
   natives du navigateur (`<audio>`/`<video>`), pas d'un décodage complet via ffmpeg.wasm.
-  Pas d'onglet Type de fichier : la catégorie est déduite de l'extension du fichier déposé.
+  Pas d'onglet Type de fichier : la catégorie est déduite de l'extension du fichier déposé —
+  y compris pour des formats que le Convertisseur ne gère pas : PDF (nombre de pages,
+  métadonnées du document), ZIP (liste des fichiers, ratio de compression, type détecté —
+  docx/xlsx/pptx, JAR, EPUB), polices TTF/OTF/WOFF/WOFF2 (famille, contours TrueType/CFF,
+  nombre de glyphes — WOFF2 limité aux infos d'en-tête, la compression Brotli entière n'est
+  pas décodée). Images : métadonnées EXIF (appareil, date, GPS...) quand présentes. Audio
+  MP3 : tags ID3v2/ID3v1 (titre, artiste, album, année, genre, présence de pochette). Vidéo
+  MP4/MOV : codec (H.264, H.265/HEVC, VP9, AV1...), lu directement dans les box ISO-BMFF.
   Voir `public/inspect.js`.
 - **Comparateur** : seul mode à deux entrées (fichier A / fichier B). Images : diff pixel
   par pixel rendue dans une image téléchargeable (zones qui changent en rouge, reste en
@@ -78,7 +92,9 @@ résultat).
   texte et le minutage, pas le style (police, couleur, position) : non représentable en
   SRT/VTT, perdu dans les deux sens.
 
-D'autres formats (documents, archives...) pourront être ajoutés par la suite.
+PDF, ZIP et polices (TTF/OTF/WOFF/WOFF2) sont pris en charge par l'Inspecteur (et le PDF
+aussi par le Compresseur), mais pas par le Convertisseur — aucun de ces formats n'a de
+format de sortie équivalent qui aurait du sens ici.
 
 ### Historique local
 
@@ -115,11 +131,13 @@ npx serve public
 ## Structure
 
 - `public/convert.js` — conversion d'images (Canvas API + ImageTracer.js + heic2any + UTIF.js)
-- `public/compress.js` — compression d'images/audio/vidéos (même format en sortie)
+- `public/compress.js` — compression d'images (dont SVG)/audio/vidéos/PDF (même format en
+  sortie)
 - `public/data.js` — conversion de données (CSV/JSON/XLSX)
 - `public/subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
 - `public/history.js` — historique local des 5 derniers fichiers (IndexedDB)
-- `public/inspect.js` — lecture des propriétés d'un fichier, sans le modifier
+- `public/inspect.js` — lecture des propriétés d'un fichier, sans le modifier (images,
+  audio/vidéo, données, sous-titres, PDF, ZIP, polices)
 - `public/compare.js` — diff entre deux fichiers (image, texte ligne à ligne, ou empreinte)
 - `public/zip.js` — génération d'archives ZIP pour le traitement par lot
 - `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
