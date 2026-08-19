@@ -24,6 +24,16 @@ function formatDate(timestamp) {
   return new Date(timestamp).toLocaleString(getLanguage() === 'en' ? 'en-US' : 'fr-FR');
 }
 
+// Débit moyen en kbps (taille du fichier / durée) : approximatif dès qu'il y a un
+// conteneur, mais suffisant pour donner un ordre de grandeur. null si la durée n'est pas
+// exploitable (fichier sans métadonnée de durée valide) — utilisé par inspectAudio et
+// inspectVideo, tous deux basés sur les métadonnées natives lues par readMediaMetadata.
+function averageBitrateItem(fileSize, duration) {
+  if (!Number.isFinite(duration) || duration <= 0) return null;
+  const kbps = Math.round((fileSize * 8) / duration / 1000);
+  return { label: t('inspect.avgBitrate'), value: `${kbps} kbps` };
+}
+
 // Charge un fichier audio/vidéo dans un élément média caché le temps de lire ses
 // métadonnées (durée, dimensions pour la vidéo), puis libère l'URL objet créée.
 function readMediaMetadata(file, tag) {
@@ -705,10 +715,8 @@ async function inspectId3Items(file) {
 async function inspectAudio(file) {
   const meta = await readMediaMetadata(file, 'audio');
   const items = [{ label: t('inspect.duration'), value: formatDuration(meta.duration) }];
-  if (Number.isFinite(meta.duration) && meta.duration > 0) {
-    const kbps = Math.round((file.size * 8) / meta.duration / 1000);
-    items.push({ label: t('inspect.avgBitrate'), value: `${kbps} kbps` });
-  }
+  const bitrate = averageBitrateItem(file.size, meta.duration);
+  if (bitrate) items.push(bitrate);
   const signal = await readAudioSignalInfo(file);
   if (signal) {
     items.push({ label: t('inspect.channels'), value: channelsLabel(signal.channels) });
@@ -792,10 +800,8 @@ async function inspectVideo(file) {
   if (meta.width && meta.height) {
     items.push({ label: t('inspect.aspectRatio'), value: aspectRatioLabel(meta.width, meta.height) });
   }
-  if (Number.isFinite(meta.duration) && meta.duration > 0) {
-    const kbps = Math.round((file.size * 8) / meta.duration / 1000);
-    items.push({ label: t('inspect.avgBitrate'), value: `${kbps} kbps` });
-  }
+  const bitrate = averageBitrateItem(file.size, meta.duration);
+  if (bitrate) items.push(bitrate);
   // Limité aux conteneurs ISO-BMFF (MP4/MOV, même famille de box) : WebM/MKV/AVI/FLV/OGV
   // utiliseraient un tout autre format de conteneur (EBML pour WebM/MKV notamment), non
   // couvert ici — le champ est simplement omis pour ces formats plutôt que d'échouer.

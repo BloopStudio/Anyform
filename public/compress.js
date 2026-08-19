@@ -280,19 +280,7 @@ async function compressVideo(file, level, onProgress) {
     throw new Error(t('error.compressUnsupportedVideo', { ext }));
   }
 
-  const ffmpeg = await loadFFmpeg(onProgress);
-
-  const inName = `input.${ext}`;
-  const outName = `output.${ext}`;
-
-  await ffmpeg.writeFile(inName, new Uint8Array(await file.arrayBuffer()));
-  await ffmpeg.exec(['-i', inName, ...buildArgs(level), outName]);
-  const data = await ffmpeg.readFile(outName);
-
-  await ffmpeg.deleteFile(inName);
-  await ffmpeg.deleteFile(outName);
-
-  return new Blob([data.buffer], { type: VIDEO_MIME[ext] || 'application/octet-stream' });
+  return runFfmpeg(file, ext, ext, buildArgs(level), onProgress, VIDEO_MIME[ext]);
 }
 
 const AUDIO_BITRATE_BY_LEVEL = { light: 192, medium: 128, strong: 96 };
@@ -328,17 +316,5 @@ async function compressAudio(file, level, onProgress) {
     throw new Error(t('error.compressUnsupportedAudio', { ext }));
   }
 
-  const ffmpeg = await loadFFmpeg(onProgress);
-
-  const inName = `input.${ext}`;
-  const outName = `output.${ext}`;
-
-  await ffmpeg.writeFile(inName, new Uint8Array(await file.arrayBuffer()));
-  await ffmpeg.exec(['-i', inName, ...buildArgs(level), outName]);
-  const data = await ffmpeg.readFile(outName);
-
-  await ffmpeg.deleteFile(inName);
-  await ffmpeg.deleteFile(outName);
-
-  return new Blob([data.buffer], { type: AUDIO_MIME[ext] || 'application/octet-stream' });
+  return runFfmpeg(file, ext, ext, buildArgs(level), onProgress, AUDIO_MIME[ext]);
 }
