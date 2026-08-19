@@ -6,8 +6,9 @@ déployée sur GitHub Pages.
 
 ## Formats supportés
 
-- Images : SVG, PNG, JPG, WebP, TIFF, GIF, AVIF, ICO, HEIC/HEIF en entrée (sharp + potrace
-  pour la vectorisation raster → SVG, `heic-convert` pour le décodage HEIC/HEIF)
+- Images : SVG, PNG, JPG, WebP, TIFF, GIF, AVIF, ICO, HEIC/HEIF en entrée (sharp +
+  imagetracerjs pour la vectorisation raster → SVG, `heic-convert` pour le décodage
+  HEIC/HEIF)
 - Données : CSV ⇄ JSON ⇄ XLSX (SheetJS, build patché sans vulnérabilité connue)
 - Audio : WAV, MP3, OGG, FLAC, AAC, M4A, WMA, Opus
 - Vidéo : MP4, WebM, MOV, AVI, MKV, FLV, OGV
@@ -114,7 +115,7 @@ Il faut préciser exactement l'une des deux options `-t` ou `-c`.
 
 ## Structure
 
-- `lib/convert.js` — conversion et compression d'images (sharp + potrace), compression PDF
+- `lib/convert.js` — conversion et compression d'images (sharp + imagetracerjs), compression PDF
 - `lib/data.js` — conversion de données (SheetJS)
 - `lib/media.js` — conversion et compression audio/vidéo (ffmpeg-static)
 - `lib/subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
