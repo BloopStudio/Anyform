@@ -24,15 +24,19 @@ entrée, + AVIF/ICO/TIFF en sortie), données (CSV/JSON/XLSX), audio
 sortie) via le moteur ffmpeg.wasm vendorisé localement, et sous-titres (SRT/VTT/ASS, texte
 pur — voir `subtitles.js`).
 
-**Compresseur** — réduit la taille d'un fichier sans changer son format, limité aux images
-(PNG/JPG/WebP/HEIC), à l'audio et aux vidéos (voir `compress.js` : qualité réduite pour
-JPG/WebP, redimensionnement pour PNG ; bitrate réduit pour l'audio compressé,
+**Compresseur** — réduit la taille d'un fichier sans changer son format : images
+(PNG/JPG/WebP/HEIC/SVG), audio, vidéos et PDF (voir `compress.js` : qualité réduite pour
+JPG/WebP, redimensionnement pour PNG ; minification maison pour SVG (commentaires, espaces,
+précision décimale, title/desc/metadata) ; bitrate réduit pour l'audio compressé,
 `-compression_level` pour FLAC, fréquence d'échantillonnage réduite pour WAV ; CRF réduit
-pour la vidéo sur le même codec/conteneur).
+pour la vidéo sur le même codec/conteneur ; PDF recompressé objet par objet, ne touche
+qu'aux images JPEG intégrées, renvoyé tel quel si la reconstruction n'est pas sûre).
 
 **Inspecteur** — lit les propriétés d'un fichier (dimensions, durée, lignes/colonnes,
 nombre de sous-titres...) sans le modifier. Catégorie déduite de l'extension déposée, pas
-d'onglet Type de fichier à pré-choisir. Voir `inspect.js`.
+d'onglet Type de fichier à pré-choisir — y compris PDF (pages, métadonnées), ZIP (liste des
+fichiers, ratio, type détecté), polices TTF/OTF/WOFF/WOFF2 (famille, contours, nombre de
+glyphes), tags ID3 des MP3 et codec vidéo des MP4/MOV. Voir `inspect.js`.
 
 **Comparateur** — seul mode à deux entrées (fichier A / fichier B). Images → diff pixel par
 pixel téléchargeable (zones qui changent en rouge). Données/sous-titres → diff ligne à
@@ -70,10 +74,11 @@ déclare donc explicitement `content_security_policy.extension_pages` avec
 - `background.js` — service worker : menu contextuel, récupération de l'image cliquée
 - `popup.html` / `popup.js` / `popup.css` — interface de conversion
 - `convert.js` / `data.js` — conversion image/données (identique à l'app web)
-- `compress.js` — compression d'images/audio/vidéos (même format en sortie)
+- `compress.js` — compression d'images (dont SVG)/audio/vidéos/PDF (même format en sortie)
 - `subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
 - `history.js` — historique local des 5 derniers fichiers (IndexedDB)
-- `inspect.js` — lecture des propriétés d'un fichier, sans le modifier
+- `inspect.js` — lecture des propriétés d'un fichier, sans le modifier (images, audio/vidéo,
+  données, sous-titres, PDF, ZIP, polices)
 - `compare.js` — diff entre deux fichiers (image, texte ligne à ligne, ou empreinte)
 - `ffmpeg-engine.js` / `audio.js` / `video.js` — conversion audio/vidéo (ffmpeg.wasm,
   chargé via `chrome.runtime.getURL()` plutôt que des blob URLs, bloquées par la CSP)
