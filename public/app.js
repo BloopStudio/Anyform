@@ -194,6 +194,10 @@ const INSPECT_ONLY_EXTS = {
   avif: 'image',
   pdf: 'document',
   zip: 'archive',
+  ttf: 'font',
+  otf: 'font',
+  woff: 'font',
+  woff2: 'font',
 };
 
 function inspectCategoryOfExt(ext) {

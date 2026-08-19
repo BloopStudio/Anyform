@@ -206,6 +206,27 @@ const STRINGS = {
   'inspect.zip.andMore': { fr: ' et {{n}} de plus', en: ' and {{n}} more' },
   'inspect.zip.invalid': { fr: 'Archive illisible', en: 'Unreadable archive' },
 
+  'inspect.id3.title': { fr: 'Titre', en: 'Title' },
+  'inspect.id3.artist': { fr: 'Artiste', en: 'Artist' },
+  'inspect.id3.album': { fr: 'Album', en: 'Album' },
+  'inspect.id3.year': { fr: 'Année', en: 'Year' },
+  'inspect.id3.genre': { fr: 'Genre', en: 'Genre' },
+  'inspect.id3.cover': { fr: 'Pochette', en: 'Cover art' },
+  'inspect.id3.coverPresent': { fr: 'Présente ({{mime}})', en: 'Present ({{mime}})' },
+
+  'inspect.videoCodec': { fr: 'Codec vidéo', en: 'Video codec' },
+
+  'inspect.font.format': { fr: 'Format', en: 'Format' },
+  'inspect.font.outlineFormat': { fr: 'Contours', en: 'Outlines' },
+  'inspect.font.family': { fr: 'Famille', en: 'Family' },
+  'inspect.font.glyphCount': { fr: 'Nombre de glyphes', en: 'Glyph count' },
+  'inspect.font.tables': { fr: 'Tables', en: 'Tables' },
+  'inspect.font.note': { fr: 'Note', en: 'Note' },
+  'inspect.font.woff2LimitedNote': {
+    fr: 'Aperçu limité (compression Brotli non décodée) : nom de famille non disponible',
+    en: 'Limited preview (Brotli compression not decoded): family name unavailable',
+  },
+
   'error.mediaUnreadable': {
     fr: 'Impossible de lire ce fichier (corrompu ou format non supporté par le navigateur).',
     en: 'Unable to read this file (corrupted or format not supported by the browser).',
