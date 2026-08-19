@@ -282,21 +282,21 @@ function t(key, vars) {
   return text;
 }
 
+// Attribut data-* à repérer dans le HTML -> comment appliquer la traduction trouvée à
+// l'élément, pour chacune des 4 formes de contenu traduisible statique.
+const STATIC_TRANSLATION_TARGETS = [
+  { selector: '[data-i18n]', dataKey: 'i18n', apply: (el, text) => (el.textContent = text) },
+  { selector: '[data-i18n-placeholder]', dataKey: 'i18nPlaceholder', apply: (el, text) => (el.placeholder = text) },
+  { selector: '[data-i18n-aria-label]', dataKey: 'i18nAriaLabel', apply: (el, text) => el.setAttribute('aria-label', text) },
+  { selector: '[data-i18n-alt]', dataKey: 'i18nAlt', apply: (el, text) => (el.alt = text) },
+];
+
 // Applique les traductions aux éléments statiques du HTML, repérés par des attributs
 // data-i18n (textContent), data-i18n-placeholder, data-i18n-aria-label ou data-i18n-alt.
 function applyStaticTranslations() {
-  document.querySelectorAll('[data-i18n]').forEach((el) => {
-    el.textContent = t(el.dataset.i18n);
-  });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
-    el.placeholder = t(el.dataset.i18nPlaceholder);
-  });
-  document.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
-    el.setAttribute('aria-label', t(el.dataset.i18nAriaLabel));
-  });
-  document.querySelectorAll('[data-i18n-alt]').forEach((el) => {
-    el.alt = t(el.dataset.i18nAlt);
-  });
+  for (const { selector, dataKey, apply } of STATIC_TRANSLATION_TARGETS) {
+    document.querySelectorAll(selector).forEach((el) => apply(el, t(el.dataset[dataKey])));
+  }
 }
 
 // Applique la langue détectée dès l'évaluation du script (attribut lang, avant même que le

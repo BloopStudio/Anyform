@@ -41,3 +41,32 @@ async function loadFFmpeg(onProgress) {
 
   return ffmpegPromise;
 }
+
+/**
+ * Exécute ffmpeg.wasm sur un fichier : écrit l'entrée dans son système de fichiers virtuel,
+ * lance la commande, lit la sortie puis nettoie, et retourne le résultat en Blob. Partagé par
+ * les 4 fonctions convert/compress audio et vidéo (audio.js, video.js, compress.js), qui ne
+ * diffèrent que par les arguments ffmpeg et le type MIME de sortie.
+ * @param {File} file
+ * @param {string} inExt extension du fichier d'entrée (nom du fichier virtuel ffmpeg)
+ * @param {string} outExt extension du fichier de sortie
+ * @param {string[]} args arguments ffmpeg entre `-i input` et le nom de sortie
+ * @param {(percent: number) => void} [onProgress]
+ * @param {string} [mimeType]
+ * @returns {Promise<Blob>}
+ */
+async function runFfmpeg(file, inExt, outExt, args, onProgress, mimeType) {
+  const ffmpeg = await loadFFmpeg(onProgress);
+
+  const inName = `input.${inExt}`;
+  const outName = `output.${outExt}`;
+
+  await ffmpeg.writeFile(inName, new Uint8Array(await file.arrayBuffer()));
+  await ffmpeg.exec(['-i', inName, ...args, outName]);
+  const data = await ffmpeg.readFile(outName);
+
+  await ffmpeg.deleteFile(inName);
+  await ffmpeg.deleteFile(outName);
+
+  return new Blob([data.buffer], { type: mimeType || 'application/octet-stream' });
+}

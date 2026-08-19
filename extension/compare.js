@@ -113,6 +113,17 @@ async function compareText(fileA, fileB) {
   };
 }
 
+// Dessine une image sur un canvas hors-écran à la taille donnée et retourne ses pixels
+// bruts (RGBA) — utilisé deux fois par compareImages, une par fichier comparé.
+function imageToPixels(img, width, height) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, width, height);
+  return ctx.getImageData(0, 0, width, height).data;
+}
+
 /**
  * Compare deux images pixel par pixel sur leur zone commune (le plus petit des deux
  * rectangles si les dimensions diffèrent) et produit une image de diff : pixels
@@ -126,17 +137,8 @@ async function compareImages(fileA, fileB) {
   const height = Math.min(imgA.naturalHeight, imgB.naturalHeight);
   const sizeMismatch = imgA.naturalWidth !== imgB.naturalWidth || imgA.naturalHeight !== imgB.naturalHeight;
 
-  const canvasA = document.createElement('canvas');
-  canvasA.width = width;
-  canvasA.height = height;
-  canvasA.getContext('2d').drawImage(imgA, 0, 0, width, height);
-  const pixelsA = canvasA.getContext('2d').getImageData(0, 0, width, height).data;
-
-  const canvasB = document.createElement('canvas');
-  canvasB.width = width;
-  canvasB.height = height;
-  canvasB.getContext('2d').drawImage(imgB, 0, 0, width, height);
-  const pixelsB = canvasB.getContext('2d').getImageData(0, 0, width, height).data;
+  const pixelsA = imageToPixels(imgA, width, height);
+  const pixelsB = imageToPixels(imgB, width, height);
 
   const outCanvas = document.createElement('canvas');
   outCanvas.width = width;
