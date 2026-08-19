@@ -1,6 +1,6 @@
 {
   "name": "anyform-cli",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Anyform - convertisseur de formats (images, données, audio, vidéo) - ligne de commande",
   "main": "lib/convert.js",
   "type": "commonjs",
