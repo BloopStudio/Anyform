@@ -12,6 +12,7 @@
 const {
   convertImage,
   compressImage,
+  compressPdf,
   traceToSvg,
   normalizeFormat,
   isSvgBuffer,
@@ -42,6 +43,7 @@ module.exports = {
   // TIFF, AVIF, ICO, HEIC/HEIF en entrée ⇄ PNG/JPG/WebP/AVIF/ICO/TIFF/SVG en sortie.
   convertImage,
   compressImage,
+  compressPdf,
   traceToSvg,
   normalizeFormat,
   isSvgBuffer,
