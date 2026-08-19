@@ -26,13 +26,20 @@ installation, ouvre directement dans le navigateur.
 - App de bureau (.exe / .dmg / .AppImage) : [dernière release](https://github.com/TheDEMON78/Anyform/releases/latest)
 - Extension navigateur : bientôt sur le Chrome Web Store
 
-## Convertisseur et Compresseur
+## Convertisseur, Compresseur, Inspecteur, Comparateur
 
-Deux modes disponibles (web et app de bureau) :
+Quatre modes disponibles (web, app de bureau, extension — le CLI et la bibliothèque Node
+exposent les mêmes fonctions via `-c`/`info`/`diff` plutôt que des onglets) :
 
 - **Convertisseur** : change le format (tableau ci-dessous).
-- **Compresseur** : réduit la taille d'une image ou d'une vidéo **sans changer son
-  format**, avec un niveau Léger/Moyen/Fort.
+- **Compresseur** : réduit la taille d'un fichier **sans changer son format**, avec un
+  niveau Léger/Moyen/Fort — images (dont minification SVG), audio, vidéo et PDF
+  (recompression des images JPEG intégrées).
+- **Inspecteur** : lit les propriétés d'un fichier (dimensions, durée, métadonnées...) sans
+  le modifier — y compris des formats que le Convertisseur ne gère pas : PDF, ZIP et
+  polices TTF/OTF/WOFF/WOFF2, plus tags ID3 (MP3), EXIF (images) et codec vidéo (MP4/MOV).
+- **Comparateur** : diff visuelle (images), ligne à ligne (données/sous-titres) ou par
+  empreinte SHA-256 (reste) entre deux fichiers.
 
 ## Formats supportés
 
@@ -41,6 +48,7 @@ Deux modes disponibles (web et app de bureau) :
 - **Audio** : WAV, MP3, OGG, M4A, FLAC, AAC, WMA, Opus
 - **Vidéo** : MP4, WebM, MOV, MKV, AVI, FLV, OGV en entrée ⇄ les mêmes + GIF animé en sortie
 - **Données** : CSV ⇄ JSON ⇄ XLSX
+- **Inspection/compression seule** (pas de format de sortie équivalent) : PDF, ZIP, polices
 
 ## Confidentialité
 
