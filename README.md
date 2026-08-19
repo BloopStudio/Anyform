@@ -93,14 +93,20 @@ installateurs.
 Un onglet en haut de l'interface bascule entre eux :
 
 - **Convertisseur** : change le format d'un fichier (formats ci-dessous).
-- **Compresseur** : réduit la taille d'un fichier **sans changer son format**. Limité aux
-  images (qualité réduite pour JPG/WebP, redimensionnement pour PNG), à l'audio (bitrate
-  réduit, `-compression_level` pour FLAC sans perte, fréquence d'échantillonnage réduite
-  pour WAV) et aux vidéos (CRF réduit sur le même codec/conteneur, audio inchangé), avec un
-  niveau Léger/Moyen/Fort. Voir `public/compress.js`.
+- **Compresseur** : réduit la taille d'un fichier **sans changer son format**. Images
+  (qualité réduite pour JPG/WebP, redimensionnement pour PNG, minification maison pour SVG),
+  audio (bitrate réduit, `-compression_level` pour FLAC sans perte, fréquence
+  d'échantillonnage réduite pour WAV), vidéos (CRF réduit sur le même codec/conteneur, audio
+  inchangé) et PDF (recompression des images JPEG intégrées, reconstruction objet par
+  objet — renvoie le fichier tel quel plutôt que de risquer une corruption sur les PDF avec
+  flux d'objets compressés ou générations d'objet non nulles), avec un niveau
+  Léger/Moyen/Fort. Voir `public/compress.js`.
 - **Inspecteur** : lit les propriétés d'un fichier (dimensions, durée, lignes/colonnes,
   nombre de sous-titres...) sans le modifier. Catégorie déduite de l'extension déposée, pas
-  d'onglet Type de fichier à pré-choisir. Voir `public/inspect.js`.
+  d'onglet Type de fichier à pré-choisir — y compris PDF (pages, métadonnées), ZIP (liste des
+  fichiers, ratio, type détecté), polices TTF/OTF/WOFF/WOFF2 (famille, contours, nombre de
+  glyphes), tags ID3 des MP3 (titre, artiste, album, année, genre, pochette) et codec vidéo
+  des MP4/MOV (H.264, H.265/HEVC, VP9, AV1...). Voir `public/inspect.js`.
 - **Comparateur** : seul mode à deux entrées (fichier A / fichier B). Images → diff pixel
   par pixel téléchargeable. Données/sous-titres → diff ligne à ligne (LCS), repli sur
   empreinte SHA-256 au-delà de 3000 lignes. Reste (audio/vidéo/xlsx) → empreinte SHA-256
@@ -137,11 +143,13 @@ restent visibles avec leur erreur, n'interrompent pas le reste du lot. Voir
 - `build/license.txt`, `build/installer-*.bmp`, `build/dmg-background.png` — ressources de
   personnalisation des installateurs (voir plus haut)
 - `public/convert.js` — conversion d'images (Canvas API + ImageTracer.js + heic2any + UTIF.js)
-- `public/compress.js` — compression d'images/audio/vidéos (même format en sortie)
+- `public/compress.js` — compression d'images (dont SVG)/audio/vidéos/PDF (même format en
+  sortie)
 - `public/data.js` — conversion de données (CSV/JSON/XLSX)
 - `public/subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
 - `public/history.js` — historique local des 5 derniers fichiers (IndexedDB)
-- `public/inspect.js` — lecture des propriétés d'un fichier, sans le modifier
+- `public/inspect.js` — lecture des propriétés d'un fichier, sans le modifier (images,
+  audio/vidéo, données, sous-titres, PDF, ZIP, polices)
 - `public/compare.js` — diff entre deux fichiers (image, texte ligne à ligne, ou empreinte)
 - `public/zip.js` — génération d'archives ZIP pour le traitement par lot
 - `public/ffmpeg-engine.js` — chargement partagé du moteur ffmpeg.wasm
