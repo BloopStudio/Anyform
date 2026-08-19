@@ -186,28 +186,17 @@ jobs:
           make_latest: true
           files: artifacts/*
 
-      - name: Supprimer les releases antérieures à (version publiée - 10)
+      - name: Supprimer les releases au-delà des 10 plus récentes
+        # Trie par date de publication plutôt que de parser les numéros de version : évite
+        # le bug de la version précédente, qui ne comparait que le patch au sein d'un même
+        # préfixe majeur.mineur — un changement de mineur/majeur aurait alors rendu toutes
+        # les anciennes releases impossibles à nettoyer (préfixe qui ne matche plus jamais).
+        # Même principe que le nettoyage des runs de workflow ailleurs dans le projet.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          PREFIX="${VERSION%.*}"
-          PATCH="${VERSION##*.}"
-          THRESHOLD=$((PATCH - 10))
-
-          if [ "$THRESHOLD" -le 0 ]; then
-            echo "Version ${VERSION} trop basse pour déclencher un nettoyage (seuil ${THRESHOLD} <= 0)."
-            exit 0
-          fi
-
-          echo "Suppression des releases ${PREFIX}.x antérieures à ${PREFIX}.${THRESHOLD}"
-          gh release list --repo "${{ github.repository }}" --limit 100 --json tagName --jq '.[].tagName' \
-            | while read -r tag; do
-            TAG_VERSION="${tag#v}"
-            TAG_PREFIX="${TAG_VERSION%.*}"
-            TAG_PATCH="${TAG_VERSION##*.}"
-            if [ "$TAG_PREFIX" = "$PREFIX" ] && [[ "$TAG_PATCH" =~ ^[0-9]+$ ]] && [ "$TAG_PATCH" -lt "$THRESHOLD" ]; then
-              echo "Suppression de la release obsolète : $tag"
-              gh release delete "$tag" --repo "${{ github.repository }}" -y --cleanup-tag
-            fi
+          gh release list --repo "${{ github.repository }}" --limit 100 --json tagName,publishedAt \
+            --jq 'sort_by(.publishedAt) | reverse | .[10:] | .[].tagName' | while read -r tag; do
+            echo "Suppression de la release obsolète : $tag"
+            gh release delete "$tag" --repo "${{ github.repository }}" -y --cleanup-tag
           done
