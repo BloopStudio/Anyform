@@ -56,10 +56,19 @@ const vtt = anyform.convertSubtitle(srt, 'srt', 'vtt');
 const infos = await anyform.inspectFile('photo.jpg', 'image', 'jpg');
 const diff = await anyform.compareFiles('avant.png', 'apres.png', 'image');
 
-// Inspection uniquement (pas de conversion) : PDF et ZIP, avec les catégories 'document'
-// et 'archive' — et EXIF (appareil, date de prise de vue, GPS...) pour les JPEG/TIFF.
+// Inspection uniquement (pas de conversion) : PDF, ZIP et polices, avec les catégories
+// 'document', 'archive' et 'font' — plus EXIF (JPEG/TIFF), tags ID3 (MP3) et codec vidéo
+// (MP4/MOV) déjà couverts par la catégorie 'image'/'audio'/'video' ci-dessus.
 const pdfInfos = await anyform.inspectFile('rapport.pdf', 'document', 'pdf');
 const zipInfos = await anyform.inspectFile('archive.zip', 'archive', 'zip');
+const fontInfos = await anyform.inspectFile('police.woff2', 'font', 'woff2');
+
+// Compression PDF (même principe que compressImage : niveau light/medium/strong) — ne
+// touche qu'aux images JPEG intégrées, renvoie le buffer d'entrée tel quel si la
+// reconstruction n'est pas sûre (flux d'objets compressés, générations d'objet non nulles).
+const pdfBuffer = fs.readFileSync('rapport.pdf');
+const compressedPdf = await anyform.compressPdf(pdfBuffer, 'medium');
+fs.writeFileSync('rapport-compresse.pdf', compressedPdf);
 ```
 
 Toutes les fonctions sont asynchrones sauf `convertData`, `convertSubtitle`, `parseSubtitle`,
@@ -70,13 +79,16 @@ notable). Voir `index.js` pour la liste complète des exports et leurs domaines.
 
 - Images : SVG, PNG, JPG, WebP, TIFF, GIF, AVIF, ICO, HEIC/HEIF en entrée ⇄
   PNG/JPG/WebP/AVIF/TIFF/SVG en sortie (sharp + potrace pour la vectorisation raster → SVG,
-  `heic-convert` pour le décodage HEIC/HEIF)
+  `heic-convert` pour le décodage HEIC/HEIF) — `compressImage` gère aussi le SVG (minification
+  maison, sans dépendance)
 - Données : CSV ⇄ JSON ⇄ XLSX (SheetJS, build patché sans vulnérabilité connue)
 - Audio : WAV, MP3, OGG, FLAC, AAC, M4A, WMA, Opus
 - Vidéo : MP4, WebM, MOV, AVI, MKV, FLV, OGV
 - Sous-titres : SRT ⇄ VTT ⇄ ASS (texte pur, aucune dépendance)
-- Inspection seule (pas de conversion) : PDF (`'document'`) et ZIP (`'archive'`) — métadonnées,
-  nombre de pages, contenu de l'archive, sans dépendance externe
+- Inspection seule (pas de conversion) : PDF (`'document'`), ZIP (`'archive'`) et polices
+  TTF/OTF/WOFF/WOFF2 (`'font'`) — métadonnées, nombre de pages, contenu de l'archive, famille
+  et nombre de glyphes, sans dépendance externe (`compressPdf` recompresse en plus les images
+  JPEG intégrées à un PDF)
 
 Audio et vidéo passent par le binaire `ffmpeg` statique fourni par `ffmpeg-static` (installé
 automatiquement avec le package, aucune install système requise).
@@ -99,10 +111,11 @@ l'appelant veut afficher ses propres messages dans la même langue.
 ## Structure
 
 - `index.js` — point d'entrée public, ré-exporte les fonctions de `lib/`
-- `lib/convert.js` — conversion/compression d'images (sharp + potrace)
+- `lib/convert.js` — conversion/compression d'images (sharp + potrace), compression PDF
 - `lib/data.js` — conversion de données (SheetJS)
 - `lib/media.js` — conversion et compression audio/vidéo (ffmpeg-static)
 - `lib/subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
-- `lib/inspect.js` — lecture des propriétés d'un fichier, sans le modifier
+- `lib/inspect.js` — lecture des propriétés d'un fichier, sans le modifier (images,
+  audio/vidéo, données, sous-titres, PDF, ZIP, polices)
 - `lib/compare.js` — diff entre deux fichiers (image, texte ligne à ligne, ou empreinte)
 - `lib/i18n.js` — traduction FR/EN des messages d'erreur
