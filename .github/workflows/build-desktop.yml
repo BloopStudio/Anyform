@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 # Empêche deux runs de tourner en même temps : sans ça, deux releases publiées à quelques
 # secondes d'intervalle peuvent chacune calculer leurs notes de version par rapport à la même
@@ -186,17 +187,17 @@ jobs:
           make_latest: true
           files: artifacts/*
 
-      - name: Supprimer les releases au-delà des 10 plus récentes
-        # Trie par date de publication plutôt que de parser les numéros de version : évite
-        # le bug de la version précédente, qui ne comparait que le patch au sein d'un même
-        # préfixe majeur.mineur — un changement de mineur/majeur aurait alors rendu toutes
-        # les anciennes releases impossibles à nettoyer (préfixe qui ne matche plus jamais).
-        # Même principe que le nettoyage des runs de workflow ailleurs dans le projet.
+      - name: Supprimer les anciens runs du workflow (garder les 10 derniers)
+        # Les releases elles-mêmes ne sont plus nettoyées ici : elles doivent rester
+        # disponibles indéfiniment comme historique des versions publiées. Seul l'historique
+        # des runs d'Actions (logs/artefacts de build) est purgé, comme sur les autres
+        # workflows du projet.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release list --repo "${{ github.repository }}" --limit 100 --json tagName,publishedAt \
-            --jq 'sort_by(.publishedAt) | reverse | .[10:] | .[].tagName' | while read -r tag; do
-            echo "Suppression de la release obsolète : $tag"
-            gh release delete "$tag" --repo "${{ github.repository }}" -y --cleanup-tag
+          gh run list --repo "${{ github.repository }}" --workflow "build-desktop.yml" \
+            --json databaseId,createdAt --limit 100 \
+            --jq 'sort_by(.createdAt) | reverse | .[10:] | .[].databaseId' | while read -r id; do
+            echo "Suppression du run obsolète : $id"
+            gh run delete "$id" --repo "${{ github.repository }}" || true
           done
