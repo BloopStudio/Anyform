@@ -78,7 +78,7 @@ notable). Voir `index.js` pour la liste complète des exports et leurs domaines.
 ## Formats supportés
 
 - Images : SVG, PNG, JPG, WebP, TIFF, GIF, AVIF, ICO, HEIC/HEIF en entrée ⇄
-  PNG/JPG/WebP/AVIF/TIFF/SVG en sortie (sharp + potrace pour la vectorisation raster → SVG,
+  PNG/JPG/WebP/AVIF/TIFF/SVG en sortie (sharp + imagetracerjs pour la vectorisation raster → SVG,
   `heic-convert` pour le décodage HEIC/HEIF) — `compressImage` gère aussi le SVG (minification
   maison, sans dépendance)
 - Données : CSV ⇄ JSON ⇄ XLSX (SheetJS, build patché sans vulnérabilité connue)
@@ -111,7 +111,7 @@ l'appelant veut afficher ses propres messages dans la même langue.
 ## Structure
 
 - `index.js` — point d'entrée public, ré-exporte les fonctions de `lib/`
-- `lib/convert.js` — conversion/compression d'images (sharp + potrace), compression PDF
+- `lib/convert.js` — conversion/compression d'images (sharp + imagetracerjs), compression PDF
 - `lib/data.js` — conversion de données (SheetJS)
 - `lib/media.js` — conversion et compression audio/vidéo (ffmpeg-static)
 - `lib/subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
