@@ -46,7 +46,7 @@ function detectCategory(filePath) {
 // des formats qu'Anyform convertit, mais les inspecter n'a besoin que de lire leurs
 // métadonnées. Séparé de CATEGORY_EXT pour ne pas les rendre éligibles à convertOne/
 // compressOne, qui n'ont rien à en faire.
-const INSPECT_ONLY_EXT = { pdf: 'document', zip: 'archive' };
+const INSPECT_ONLY_EXT = { pdf: 'document', zip: 'archive', ttf: 'font', otf: 'font', woff: 'font', woff2: 'font' };
 
 function detectInspectCategory(filePath) {
   const ext = path.extname(filePath).slice(1).toLowerCase();
