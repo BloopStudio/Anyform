@@ -39,12 +39,18 @@ jobs:
         uses: actions/deploy-pages@v4
 
       - name: Supprimer les anciens déploiements Pages (garder les 10 derniers)
+        # GitHub refuse de supprimer un déploiement encore marqué "actif" (HTTP 422 "We
+        # cannot delete an active deployment") — il faut d'abord le repasser en "inactive"
+        # via l'API statuses avant le DELETE. Bug trouvé en constatant que le nettoyage
+        # s'arrêtait silencieusement (le || true masquait l'erreur) dès le premier
+        # déploiement encore actif rencontré dans la liste.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh api "repos/${{ github.repository }}/deployments?environment=github-pages&per_page=100" \
             --jq 'sort_by(.created_at) | reverse | .[10:] | .[].id' | while read -r id; do
             echo "Suppression du déploiement obsolète : $id"
+            gh api --method POST "repos/${{ github.repository }}/deployments/$id/statuses" -f state=inactive >/dev/null 2>&1 || true
             gh api --method DELETE "repos/${{ github.repository }}/deployments/$id" || true
           done
 
