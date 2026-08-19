@@ -235,6 +235,12 @@ const STRINGS = {
 
 const LANG_STORAGE_KEY = 'anyform-lang';
 
+/**
+ * Détermine la langue au premier chargement : priorité au choix explicite déjà mémorisé
+ * dans localStorage (persiste entre ouvertures de la popup, un service worker MV3 n'ayant
+ * pas de session longue durée) ; sinon, devine depuis les langues du navigateur — anglais si
+ * l'une d'elles commence par "en", français par défaut sinon.
+ */
 function detectLanguage() {
   const stored = localStorage.getItem(LANG_STORAGE_KEY);
   if (stored === 'fr' || stored === 'en') return stored;
@@ -244,10 +250,17 @@ function detectLanguage() {
 
 let currentLang = detectLanguage();
 
+/** Langue actuellement active ('fr' ou 'en'). */
 function getLanguage() {
   return currentLang;
 }
 
+/**
+ * Change la langue active, la persiste pour les prochaines ouvertures de la popup, et
+ * répercute le changement partout : attribut lang du document (accessibilité), toutes les
+ * traductions statiques du HTML, puis un événement custom pour que le reste de popup.js
+ * remette à jour ce qui ne passe pas par data-i18n (libellés dynamiques, options de select).
+ */
 function setLanguage(lang) {
   currentLang = lang === 'en' ? 'en' : 'fr';
   localStorage.setItem(LANG_STORAGE_KEY, currentLang);
@@ -286,5 +299,7 @@ function applyStaticTranslations() {
   });
 }
 
+// Applique la langue détectée dès l'évaluation du script (attribut lang, avant même que le
+// DOM ne soit prêt), puis les traductions du contenu HTML une fois le DOM chargé.
 document.documentElement.lang = currentLang;
 document.addEventListener('DOMContentLoaded', applyStaticTranslations);

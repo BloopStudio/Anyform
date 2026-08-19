@@ -7,8 +7,18 @@
  * détour n'a de toute façon plus d'utilité maintenant que tout est vendorisé en local.
  */
 
+// Mémorise la promesse (pas juste l'instance) pour que des appels concurrents pendant le
+// chargement attendent la même initialisation en cours, au lieu de charger ffmpeg.wasm
+// plusieurs fois en parallèle si l'utilisateur enchaîne deux conversions audio/vidéo vite.
 let ffmpegPromise = null;
 
+/**
+ * Charge (une seule fois par session du service worker/popup) et retourne l'instance
+ * partagée de ffmpeg.wasm, utilisée par audio.js et video.js pour toute conversion/
+ * compression audio ou vidéo. onProgress, s'il est fourni, est branché sur l'événement
+ * 'progress' de ffmpeg — seul le dernier appelant à charger ffmpeg définit ce callback,
+ * ce qui est acceptable ici car une seule conversion média tourne à la fois dans l'UI.
+ */
 async function loadFFmpeg(onProgress) {
   if (ffmpegPromise) return ffmpegPromise;
 

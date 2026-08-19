@@ -1,3 +1,6 @@
+// Formats d'entrée proposés par catégorie pour le Convertisseur/Compresseur. Ne couvre pas
+// tous les formats qu'Anyform sait lire (voir INSPECT_ONLY_EXTS plus bas) : uniquement ceux
+// qu'on peut aussi reconvertir en sortie depuis le navigateur.
 const INPUT_FORMAT_OPTIONS = {
   image: [
     { value: 'svg', label: 'SVG' },
@@ -86,6 +89,8 @@ function getOutputFormatOptions() {
   };
 }
 
+// Formats compressibles par catégorie (sous-ensemble des formats convertibles, plus
+// "document" qui n'existe que pour la compression PDF — voir onModeChange).
 const COMPRESS_FORMATS = {
   image: ['png', 'jpg', 'webp', 'heic', 'svg'],
   audio: ['wav', 'mp3', 'ogg', 'm4a', 'flac', 'aac', 'wma', 'opus'],
@@ -147,18 +152,22 @@ let compareDiffUrl = null; // object URL du dernier PNG de diff, à révoquer av
 let currentModeValue = modeTabs.querySelector('.tab[aria-selected="true"]')?.dataset.mode || 'convert';
 let currentCategoryValue = categoryTabs.querySelector('.tab[aria-selected="true"]')?.dataset.category || 'image';
 
+/** Catégorie de fichier actuellement sélectionnée (image/données/audio/vidéo/...). */
 function currentCategory() {
   return currentCategoryValue;
 }
 
+/** Vrai si l'onglet Compresseur est actif. */
 function isCompressing() {
   return currentModeValue === 'compress';
 }
 
+/** Vrai si l'onglet Inspecteur est actif. */
 function isInspectMode() {
   return currentModeValue === 'inspect';
 }
 
+/** Vrai si l'onglet Comparateur est actif. */
 function isCompareMode() {
   return currentModeValue === 'compare';
 }
@@ -191,12 +200,14 @@ const INSPECT_ONLY_EXTS = {
   woff2: 'font',
 };
 
+/** Catégorie d'une extension pour l'Inspecteur : celles du Convertisseur + INSPECT_ONLY_EXTS. */
 function inspectCategoryOfExt(ext) {
   return categoryOfExt(ext) || INSPECT_ONLY_EXTS[ext] || null;
 }
 
 const BYTE_UNITS = { fr: ['o', 'Ko', 'Mo', 'Go'], en: ['B', 'KB', 'MB', 'GB'] };
 
+/** Formate une taille en octets dans l'unité la plus lisible, localisée (fr/en). */
 function formatBytes(bytes) {
   const units = BYTE_UNITS[getLanguage()] || BYTE_UNITS.fr;
   if (bytes < 1024) return `${bytes} ${units[0]}`;
@@ -209,11 +220,17 @@ function formatBytes(bytes) {
   return `${value.toFixed(value < 10 ? 1 : 0)} ${units[unitIndex]}`;
 }
 
+/** Affiche un message de statut sous le bouton principal, avec une classe CSS (ex. 'error'). */
 function setStatus(message, type = '') {
   statusEl.textContent = message;
   statusEl.className = `status ${type}`;
 }
 
+/**
+ * Affiche la barre de progression en mode indéterminé (35% fixe, pas d'animation de
+ * pourcentage) : utilisé pendant le chargement du moteur ffmpeg.wasm, avant que la
+ * conversion elle-même ne démarre et ne fournisse une vraie progression via updateProgress.
+ */
 function showProgress(label) {
   progressWrap.hidden = false;
   progressBar.classList.add('indeterminate');
@@ -221,18 +238,21 @@ function showProgress(label) {
   progressLabel.textContent = label;
 }
 
+/** Bascule la barre de progression en mode déterminé et affiche le pourcentage réel. */
 function updateProgress(percent) {
   progressBar.classList.remove('indeterminate');
   progressBar.style.width = `${percent}%`;
   progressLabel.textContent = `${percent}%`;
 }
 
+/** Masque et réinitialise la barre de progression. */
 function hideProgress() {
   progressWrap.hidden = true;
   progressBar.classList.remove('indeterminate');
   progressBar.style.width = '0%';
 }
 
+/** Masque la carte de résultat et libère l'object URL du blob résultat précédent. */
 function hideResult() {
   resultCard.hidden = true;
   if (resultUrl) URL.revokeObjectURL(resultUrl);
@@ -240,6 +260,12 @@ function hideResult() {
   resultBlob = null;
 }
 
+/**
+ * Affiche la carte de résultat pour un blob produit par une conversion/compression.
+ * originalSize, quand fourni (mode Compresseur), permet d'afficher le gain de taille ;
+ * sans lui (mode Convertisseur, où la taille change pour d'autres raisons que la
+ * compression), on affiche juste la taille finale.
+ */
 function showResult(blob, fileName, originalSize = null) {
   resultBlob = blob;
   resultFileName = fileName;
@@ -260,6 +286,11 @@ function showResult(blob, fileName, originalSize = null) {
   resultCard.hidden = false;
 }
 
+/**
+ * Déclenche le téléchargement d'un blob via un <a download> éphémère — la façon standard de
+ * forcer un téléchargement depuis du JS sans passer par l'API chrome.downloads (pas besoin
+ * de permission supplémentaire dans le manifest, et fonctionne aussi pour l'historique).
+ */
 function downloadBlob(blob, name) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -271,6 +302,7 @@ function downloadBlob(blob, name) {
   URL.revokeObjectURL(url);
 }
 
+/** Reconstruit la liste d'historique dans le DOM à partir des entrées stockées. */
 function renderHistory(entries) {
   historySection.hidden = entries.length === 0;
   historyList.innerHTML = '';
@@ -306,6 +338,8 @@ clearHistoryBtn.addEventListener('click', () => {
   clearHistory().then(() => renderHistory([]));
 });
 
+// Chargement initial de l'historique depuis chrome.storage.local (voir history.js) ; le
+// catch silencieux évite qu'un historique corrompu/absent ne bloque le reste de la popup.
 getHistoryEntries().then(renderHistory).catch(() => {});
 
 // Le bouton principal ne se réactive que si l'entrée requise par le mode courant est
@@ -316,10 +350,16 @@ function hasRequiredInput() {
   return Boolean(selectedFile);
 }
 
+/** Réévalue si le bouton principal doit être actif, sans toucher au reste de l'UI. */
 function updateConvertBtnEnabled() {
   convertBtn.disabled = !hasRequiredInput();
 }
 
+/**
+ * Verrouille l'UI pendant une conversion/compression/inspection/comparaison en cours :
+ * empêche de changer d'onglet, de format ou de déposer un nouveau fichier tant que
+ * l'opération (potentiellement longue avec ffmpeg.wasm) n'est pas terminée.
+ */
 function setBusy(busy) {
   convertBtn.disabled = busy || !hasRequiredInput();
   convertBtn.classList.toggle('is-loading', busy);
@@ -333,6 +373,12 @@ function setBusy(busy) {
   dropzoneB.classList.toggle('is-disabled', busy);
 }
 
+/**
+ * Repeuple un <select> avec de nouvelles options. preserveSelection tente de garder la
+ * valeur précédente si elle existe toujours dans la nouvelle liste (ex. changement de
+ * langue qui ne modifie que des libellés) ; sinon, retombe sur le premier choix — cas d'un
+ * changement de catégorie où l'ancienne valeur n'a aucun sens dans la nouvelle liste.
+ */
 function populateSelect(selectEl, options, { preserveSelection = false } = {}) {
   const previousValue = selectEl.value;
 
@@ -351,6 +397,11 @@ function populateSelect(selectEl, options, { preserveSelection = false } = {}) {
   }
 }
 
+/**
+ * Restreint l'attribut accept du <input type=file> selon le mode courant, pour filtrer les
+ * fichiers proposés par le sélecteur natif du navigateur (le drag & drop, lui, n'est pas
+ * filtré par le navigateur : la validation réelle reste faite dans setFile/setInspectFile).
+ */
 function updateAcceptedFileType() {
   if (isInspectMode()) {
     // Pas de catégorie pré-choisie en mode Inspecteur (voir categoryOfExt) : n'importe
@@ -364,6 +415,11 @@ function updateAcceptedFileType() {
   }
 }
 
+/**
+ * Repeuple la liste des formats de sortie pour la catégorie courante, en excluant le format
+ * d'entrée sélectionné : convertir un fichier vers son propre format n'a pas de sens et
+ * n'est proposé nulle part dans l'UI.
+ */
 function refreshOutputOptions() {
   const category = currentCategory();
   const sourceExt = sourceFormatSelect.value;
@@ -371,6 +427,7 @@ function refreshOutputOptions() {
   populateSelect(formatSelect, options, { preserveSelection: true });
 }
 
+/** Marque comme actif (aria-selected + classe CSS) l'onglet dont le dataset correspond à value. */
 function setActiveTab(tabsEl, datasetKey, value) {
   for (const tab of tabsEl.querySelectorAll('.tab')) {
     const isActive = tab.dataset[datasetKey] === value;
@@ -379,6 +436,7 @@ function setActiveTab(tabsEl, datasetKey, value) {
   }
 }
 
+/** Gère le changement d'onglet Type de fichier : reconfigure formats et UI dépendante. */
 function onCategoryChange(category) {
   currentCategoryValue = category;
   setActiveTab(categoryTabs, 'category', category);
@@ -392,8 +450,15 @@ function onCategoryChange(category) {
   syncUiForCategory();
 }
 
+// Libellé du bouton principal par mode — recalculé aussi au changement de langue (voir
+// l'écouteur 'anyform:langchange' plus bas) puisqu'il ne passe pas par data-i18n statique.
 const MODE_LABEL_KEYS = { convert: 'mode.convert.btn', compress: 'mode.compress.btn', inspect: 'mode.inspect.btn', compare: 'mode.compare.btn' };
 
+/**
+ * Gère le changement d'onglet Convertisseur/Compresseur/Inspecteur/Comparateur : montre et
+ * cache les blocs d'UI propres à chaque mode (formats, niveau de compression, dropzone
+ * simple ou double, onglets de catégorie disponibles) et réinitialise l'état du mode quitté.
+ */
 function onModeChange(mode) {
   currentModeValue = mode;
   setActiveTab(modeTabs, 'mode', mode);
@@ -445,6 +510,7 @@ function onModeChange(mode) {
   }
 }
 
+/** Réinitialise le fichier sélectionné et l'attribut accept quand catégorie ou mode changent. */
 function syncUiForCategory() {
   updateAcceptedFileType();
   if (isInspectMode()) {
@@ -454,6 +520,11 @@ function syncUiForCategory() {
   }
 }
 
+/**
+ * Définit le fichier actif du Convertisseur/Compresseur, valide son extension contre le
+ * format d'entrée choisi (ou la liste des formats compressibles en mode Compresseur), et met
+ * à jour aperçu/statut/bouton en conséquence.
+ */
 function setFile(file) {
   selectedFile = file;
   fileNameEl.textContent = file ? file.name : '';
@@ -534,6 +605,7 @@ function setInspectFile(file) {
   setStatus('');
 }
 
+/** Affiche les métadonnées extraites par l'Inspecteur sous forme de liste de définitions. */
 function renderInspectResult(items) {
   inspectList.innerHTML = '';
   for (const item of items) {
@@ -584,6 +656,7 @@ function updateCompareCategoryStatus() {
   setStatus('');
 }
 
+/** Vide les deux emplacements du Comparateur (appelé en entrant dans ce mode). */
 function resetCompare() {
   selectedCompareFileA = null;
   selectedCompareFileB = null;
@@ -594,6 +667,13 @@ function resetCompare() {
   setStatus('');
 }
 
+/**
+ * Affiche le résultat du Comparateur selon son type : diff visuelle pour les images
+ * ('image'), diff ligne à ligne pour les fichiers texte reconnus ('text'), ou simple
+ * comparaison d'empreinte SHA-256 pour tout le reste ('hash' — audio/vidéo/xlsx/fichiers
+ * texte trop volumineux). Le rendu diffère significativement d'un type à l'autre, d'où le
+ * découpage en trois branches plutôt qu'un template unique.
+ */
 function renderCompareResult(result) {
   compareResult.innerHTML = '';
   compareResult.hidden = false;
@@ -672,6 +752,8 @@ function renderCompareResult(result) {
   compareResult.appendChild(detailsB);
 }
 
+// Câblage des onglets Type de fichier et Mode : chaque bouton porte sa valeur dans son
+// dataset plutôt qu'un écouteur dédié par onglet, pour ne pas dupliquer la logique.
 for (const tab of categoryTabs.querySelectorAll('.tab')) {
   tab.addEventListener('click', () => onCategoryChange(tab.dataset.category));
 }
@@ -680,6 +762,9 @@ for (const tab of modeTabs.querySelectorAll('.tab')) {
   tab.addEventListener('click', () => onModeChange(tab.dataset.mode));
 }
 
+// Changer le format d'entrée change aussi les formats de sortie proposés (on ne peut pas
+// convertir vers son propre format) et invalide le fichier déjà sélectionné s'il ne
+// correspond plus au nouveau format d'entrée choisi (re-validation via setFile).
 sourceFormatSelect.addEventListener('change', () => {
   updateAcceptedFileType();
   refreshOutputOptions();
@@ -736,6 +821,12 @@ wireDropzone(dropzone, fileInput, handleIncomingFile);
 wireDropzone(dropzoneA, fileInputA, (file) => setCompareFile('A', file));
 wireDropzone(dropzoneB, fileInputB, (file) => setCompareFile('B', file));
 
+/**
+ * Répartit le fichier vers le bon module de traitement (convert.js/compress.js/audio.js/
+ * video.js/...) selon catégorie et mode. Centralise ce routage ici plutôt que dans
+ * runConvertOrCompress pour garder cette dernière focalisée sur le flux UI (statut,
+ * historique, téléchargement) indépendamment du type de fichier traité.
+ */
 async function runConversion(file, category, format, level) {
   if (isCompressing()) {
     if (category === 'image') return compressImage(file, level);
@@ -765,6 +856,11 @@ async function runConversion(file, category, format, level) {
   throw new Error(t('error.categoryNotSupported'));
 }
 
+/**
+ * Flux complet Convertisseur/Compresseur : lance runConversion, met à jour l'aperçu après
+ * (images uniquement), déclenche le téléchargement automatique du résultat, affiche la carte
+ * de résultat et journalise l'opération dans l'historique local.
+ */
 async function runConvertOrCompress() {
   const category = currentCategory();
   const compressing = isCompressing();
@@ -802,6 +898,7 @@ async function runConvertOrCompress() {
     .catch(() => {});
 }
 
+/** Flux complet Inspecteur : détecte la catégorie du fichier puis affiche ses métadonnées. */
 async function runInspect() {
   setStatus(t('status.analyzing'));
   const category = inspectCategoryOfExt(extensionOf(selectedInspectFile));
@@ -810,6 +907,11 @@ async function runInspect() {
   renderInspectResult(items);
 }
 
+/**
+ * Flux complet Comparateur : revalide que les deux fichiers sont de la même catégorie
+ * (défense en profondeur — updateCompareCategoryStatus le signale déjà côté UI, mais
+ * n'empêche pas techniquement de cliquer Comparer) avant de lancer la comparaison.
+ */
 async function runCompare() {
   const category = categoryOfExt(extensionOf(selectedCompareFileA));
   const categoryB = categoryOfExt(extensionOf(selectedCompareFileB));
@@ -822,6 +924,9 @@ async function runCompare() {
   renderCompareResult(result);
 }
 
+// Point d'entrée unique du bouton principal, quel que soit le mode actif — dispatch vers le
+// bon flux (Inspecter/Comparer/Convertir-Compresser) et gère erreurs et état "busy" pour les
+// quatre uniformément, plutôt que quatre écouteurs séparés dupliquant try/finally.
 convertBtn.addEventListener('click', async () => {
   if (!hasRequiredInput()) return;
 
@@ -857,6 +962,7 @@ resetBtn.addEventListener('click', () => {
   setFile(null);
 });
 
+/** Reflète la langue active sur les boutons FR/EN via aria-pressed (état visuel + a11y). */
 function syncLangButtons() {
   const lang = getLanguage();
   langFrBtn.setAttribute('aria-pressed', String(lang === 'fr'));
