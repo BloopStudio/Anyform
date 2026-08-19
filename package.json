@@ -8,9 +8,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TheDEMON78/Anyform.git"
+    "url": "git+https://github.com/BloopStudio/Anyform.git"
   },
-  "homepage": "https://github.com/TheDEMON78/Anyform/tree/node-library",
+  "homepage": "https://github.com/BloopStudio/Anyform/tree/node-library",
   "keywords": [
     "convert",
     "conversion",
