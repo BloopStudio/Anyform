@@ -1,6 +1,6 @@
 {
   "name": "@bloopstudio/anyform",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Convertisseur de formats de fichiers (images, données, audio, vidéo, sous-titres), 100% local — bibliothèque Node.js.",
   "main": "index.js",
   "type": "commonjs",
