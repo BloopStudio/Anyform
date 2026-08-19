@@ -58,12 +58,21 @@ function diffLines(linesA, linesB) {
   return result;
 }
 
+/**
+ * Calcule l'empreinte SHA-256 d'un fichier (via l'API Web Crypto native) et la retourne en
+ * hexadécimal.
+ */
 async function sha256Hex(file) {
   const buffer = await file.arrayBuffer();
   const digest = await crypto.subtle.digest('SHA-256', buffer);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+/**
+ * Compare deux fichiers uniquement par empreinte SHA-256 (identique/différent, sans
+ * détail) : la stratégie de repli pour tout ce qui n'a pas de comparaison visuelle/texte
+ * dédiée.
+ */
 async function compareByHash(fileA, fileB) {
   const [hashA, hashB] = await Promise.all([sha256Hex(fileA), sha256Hex(fileB)]);
   return {
@@ -76,6 +85,10 @@ async function compareByHash(fileA, fileB) {
   };
 }
 
+/**
+ * Compare deux fichiers texte ligne à ligne via diffLines, avec repli sur une comparaison
+ * par empreinte si l'un des deux dépasse MAX_DIFF_LINES.
+ */
 async function compareText(fileA, fileB) {
   const [textA, textB] = await Promise.all([fileA.text(), fileB.text()]);
   const linesA = textA.split('\n');

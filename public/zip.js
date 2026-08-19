@@ -21,6 +21,10 @@ const CRC_TABLE = (() => {
   return table;
 })();
 
+/**
+ * Calcule le CRC-32 (algorithme standard ZIP) d'un tableau d'octets, via la table
+ * précalculée ci-dessus.
+ */
 function crc32(bytes) {
   let crc = 0xffffffff;
   for (let i = 0; i < bytes.length; i++) {

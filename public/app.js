@@ -155,18 +155,30 @@ let compareDiffUrl = null; // object URL du dernier PNG de diff, à révoquer av
 let currentModeValue = modeTabs.querySelector('.tab[aria-selected="true"]')?.dataset.mode || 'convert';
 let currentCategoryValue = categoryTabs.querySelector('.tab[aria-selected="true"]')?.dataset.category || 'image';
 
+/**
+ * @returns {string} la catégorie de fichier actuellement sélectionnée (image/data/audio/...).
+ */
 function currentCategory() {
   return currentCategoryValue;
 }
 
+/**
+ * @returns {boolean} vrai si le mode actif est le Compresseur.
+ */
 function isCompressing() {
   return currentModeValue === 'compress';
 }
 
+/**
+ * @returns {boolean} vrai si le mode actif est l'Inspecteur.
+ */
 function isInspectMode() {
   return currentModeValue === 'inspect';
 }
 
+/**
+ * @returns {boolean} vrai si le mode actif est le Comparateur.
+ */
 function isCompareMode() {
   return currentModeValue === 'compare';
 }
@@ -201,12 +213,20 @@ const INSPECT_ONLY_EXTS = {
   woff2: 'font',
 };
 
+/**
+ * Déduit la catégorie d'un fichier pour l'Inspecteur : catégories converties normales, plus
+ * les extensions inspection-only (TIFF/ICO/AVIF/PDF/ZIP/fonts, voir INSPECT_ONLY_EXTS).
+ */
 function inspectCategoryOfExt(ext) {
   return categoryOfExt(ext) || INSPECT_ONLY_EXTS[ext] || null;
 }
 
 const BYTE_UNITS = { fr: ['o', 'Ko', 'Mo', 'Go'], en: ['B', 'KB', 'MB', 'GB'] };
 
+/**
+ * Formate une taille en octets vers l'unité la plus lisible (o/Ko/Mo/Go selon la langue),
+ * avec une décimale sous 10 unités pour rester précis sur les petites valeurs.
+ */
 function formatBytes(bytes) {
   const units = BYTE_UNITS[getLanguage()] || BYTE_UNITS.fr;
   if (bytes < 1024) return `${bytes} ${units[0]}`;
@@ -219,11 +239,19 @@ function formatBytes(bytes) {
   return `${value.toFixed(value < 10 ? 1 : 0)} ${units[unitIndex]}`;
 }
 
+/**
+ * Affiche un message de statut (zone de texte au-dessus du bouton principal), avec une
+ * classe CSS optionnelle ('error', etc.) pour le style.
+ */
 function setStatus(message, type = '') {
   statusEl.textContent = message;
   statusEl.className = `status ${type}`;
 }
 
+/**
+ * Affiche la barre de progression en état indéterminé (avant que ffmpeg ne rapporte un
+ * pourcentage réel — le chargement du moteur lui-même n'a pas de progression connue).
+ */
 function showProgress(label) {
   progressWrap.hidden = false;
   progressBar.classList.add('indeterminate');
@@ -231,18 +259,28 @@ function showProgress(label) {
   progressLabel.textContent = label;
 }
 
+/**
+ * Met à jour la barre de progression avec un pourcentage réel (callback ffmpeg.wasm).
+ */
 function updateProgress(percent) {
   progressBar.classList.remove('indeterminate');
   progressBar.style.width = `${percent}%`;
   progressLabel.textContent = `${percent}%`;
 }
 
+/**
+ * Masque et réinitialise la barre de progression.
+ */
 function hideProgress() {
   progressWrap.hidden = true;
   progressBar.classList.remove('indeterminate');
   progressBar.style.width = '0%';
 }
 
+/**
+ * Masque la carte de résultat et libère l'URL objet du blob précédent (évite une fuite
+ * mémoire à chaque nouvelle conversion).
+ */
 function hideResult() {
   resultCard.hidden = true;
   if (resultUrl) URL.revokeObjectURL(resultUrl);
@@ -250,6 +288,10 @@ function hideResult() {
   resultBlob = null;
 }
 
+/**
+ * Affiche la carte de résultat pour un blob produit (conversion ou compression), avec le
+ * gain de taille affiché si `originalSize` est fourni (mode Compresseur).
+ */
 function showResult(blob, fileName, originalSize = null) {
   resultBlob = blob;
   resultFileName = fileName;
@@ -270,6 +312,10 @@ function showResult(blob, fileName, originalSize = null) {
   resultCard.hidden = false;
 }
 
+/**
+ * Déclenche le téléchargement d'un blob via un lien `<a download>` temporaire (technique
+ * standard pour forcer le navigateur à sauvegarder un Blob en mémoire comme un fichier).
+ */
 function downloadBlob(blob, name) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -281,6 +327,10 @@ function downloadBlob(blob, name) {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Reconstruit la liste d'historique dans le DOM à partir des entrées données (nom, taille
+ * avant/après, bouton de retéléchargement), et masque la section entière si elle est vide.
+ */
 function renderHistory(entries) {
   historySection.hidden = entries.length === 0;
   historyList.innerHTML = '';
@@ -339,10 +389,19 @@ function hasRequiredInput() {
   return Boolean(selectedFile) || selectedFiles.length > 0;
 }
 
+/**
+ * Active/désactive le bouton principal selon que l'entrée requise par le mode courant est
+ * prête.
+ */
 function updateConvertBtnEnabled() {
   convertBtn.disabled = !hasRequiredInput();
 }
 
+/**
+ * Verrouille l'interface pendant une opération en cours (conversion/compression/
+ * inspection/comparaison) : désactive le bouton principal, les onglets et les dropzones
+ * pour éviter de changer les paramètres ou de relancer une opération en plein traitement.
+ */
 function setBusy(busy) {
   convertBtn.disabled = busy || !hasRequiredInput();
   convertBtn.classList.toggle('is-loading', busy);
@@ -357,6 +416,12 @@ function setBusy(busy) {
   downloadZipBtn.disabled = busy;
 }
 
+/**
+ * Remplit un `<select>` avec une liste d'options {value, label}. Avec `preserveSelection`,
+ * garde la valeur précédemment sélectionnée si elle existe encore dans la nouvelle liste
+ * (utilisé quand la liste change de langue ou de catégorie sans que le choix de
+ * l'utilisateur doive être perdu) ; sinon retombe sur la première option.
+ */
 function populateSelect(selectEl, options, { preserveSelection = false } = {}) {
   const previousValue = selectEl.value;
 
@@ -375,6 +440,10 @@ function populateSelect(selectEl, options, { preserveSelection = false } = {}) {
   }
 }
 
+/**
+ * Met à jour l'attribut `accept` de l'input file selon le mode/catégorie courants, pour que
+ * le sélecteur de fichiers natif du système ne propose que les formats pertinents.
+ */
 function updateAcceptedFileType() {
   if (isInspectMode()) {
     // Pas de catégorie pré-choisie en mode Inspecteur (voir categoryOfExt) : n'importe
@@ -388,6 +457,10 @@ function updateAcceptedFileType() {
   }
 }
 
+/**
+ * Repeuple le `<select>` de format de sortie pour la catégorie courante, en excluant le
+ * format d'entrée sélectionné (convertir un format vers lui-même n'a pas de sens).
+ */
 function refreshOutputOptions() {
   const category = currentCategory();
   const sourceExt = sourceFormatSelect.value;
@@ -395,6 +468,10 @@ function refreshOutputOptions() {
   populateSelect(formatSelect, options, { preserveSelection: true });
 }
 
+/**
+ * Marque l'onglet correspondant à `value` comme actif (aria-selected + classe visuelle) dans
+ * un groupe d'onglets, et désélectionne les autres.
+ */
 function setActiveTab(tabsEl, datasetKey, value) {
   for (const tab of tabsEl.querySelectorAll('.tab')) {
     const isActive = tab.dataset[datasetKey] === value;
@@ -403,6 +480,11 @@ function setActiveTab(tabsEl, datasetKey, value) {
   }
 }
 
+/**
+ * Gestionnaire de changement de catégorie (onglets Image/Données/Audio/...) : met à jour
+ * l'onglet actif, repeuple les formats d'entrée/sortie, puis resynchronise le reste de
+ * l'interface (dropzone, sélection en cours) sur la nouvelle catégorie.
+ */
 function onCategoryChange(category) {
   currentCategoryValue = category;
   setActiveTab(categoryTabs, 'category', category);
@@ -418,6 +500,12 @@ function onCategoryChange(category) {
 
 const MODE_LABEL_KEYS = { convert: 'mode.convert.btn', compress: 'mode.compress.btn', inspect: 'mode.inspect.btn', compare: 'mode.compare.btn' };
 
+/**
+ * Gestionnaire de changement de mode (Convertisseur/Compresseur/Inspecteur/Comparateur) :
+ * bascule l'onglet actif, montre/cache les champs et zones propres à chaque mode, réinitialise
+ * les résultats affichés, et retombe sur une catégorie valide si celle en cours n'existe pas
+ * dans le nouveau mode (ex. "document" n'existe qu'en Compresseur).
+ */
 function onModeChange(mode) {
   currentModeValue = mode;
   setActiveTab(modeTabs, 'mode', mode);
@@ -470,6 +558,11 @@ function onModeChange(mode) {
   }
 }
 
+/**
+ * Réinitialise l'interface après un changement de mode/catégorie : recalcule l'attribut
+ * `accept` de l'input file et efface la sélection en cours (le fichier précédent n'est plus
+ * forcément valide dans le nouveau contexte).
+ */
 function syncUiForCategory() {
   updateAcceptedFileType();
   if (isInspectMode()) {
@@ -501,6 +594,11 @@ function assertFileMatchesMode(file, category, compressing) {
   }
 }
 
+/**
+ * Enregistre le fichier unique sélectionné (Convertisseur/Compresseur), le valide contre le
+ * mode/catégorie courants, prépare l'aperçu avant/après pour les images, et active le
+ * bouton principal si tout est en ordre.
+ */
 function setFile(file) {
   selectedFile = file;
   selectedFiles = [];
@@ -596,6 +694,10 @@ function setInspectFile(file) {
   setStatus('');
 }
 
+/**
+ * Affiche la liste des propriétés retournées par inspectFile dans une liste de définitions
+ * (label/valeur).
+ */
 function renderInspectResult(items) {
   inspectList.innerHTML = '';
   for (const item of items) {
@@ -646,6 +748,10 @@ function updateCompareCategoryStatus() {
   setStatus('');
 }
 
+/**
+ * Réinitialise le Comparateur : efface les deux fichiers sélectionnés et le résultat
+ * affiché (appelé en entrant dans le mode Comparateur, pour repartir d'un état propre).
+ */
 function resetCompare() {
   selectedCompareFileA = null;
   selectedCompareFileB = null;
@@ -656,6 +762,11 @@ function resetCompare() {
   setStatus('');
 }
 
+/**
+ * Affiche le résultat de compareFiles dans la zone de résultat du Comparateur : rendu
+ * dédié pour chacune des trois formes possibles (image avec diff visuelle téléchargeable,
+ * texte avec lignes ajoutées/supprimées façon diff, ou repli par empreinte SHA-256).
+ */
 function renderCompareResult(result) {
   compareResult.innerHTML = '';
   compareResult.hidden = false;
@@ -802,6 +913,11 @@ wireDropzone(dropzone, fileInput, handleIncomingFiles);
 wireDropzone(dropzoneA, fileInputA, (files) => setCompareFile('A', files[0]));
 wireDropzone(dropzoneB, fileInputB, (files) => setCompareFile('B', files[0]));
 
+/**
+ * Dispatche un fichier vers la bonne fonction de conversion ou de compression (selon le
+ * mode courant) suivant sa catégorie — point d'entrée commun utilisé aussi bien par le
+ * chemin à un seul fichier que par le traitement par lot.
+ */
 async function runConversion(file, category, format, level) {
   if (isCompressing()) {
     if (category === 'image') return compressImage(file, level);
@@ -831,6 +947,11 @@ async function runConversion(file, category, format, level) {
   throw new Error(t('error.categoryNotSupported'));
 }
 
+/**
+ * Traite le fichier unique sélectionné (Convertisseur/Compresseur) : lance la conversion,
+ * télécharge automatiquement le résultat, met à jour l'aperçu/l'historique, et notifie
+ * l'utilisateur si l'onglet n'est plus visible.
+ */
 async function runConvertOrCompress() {
   const category = currentCategory();
   const compressing = isCompressing();
@@ -877,6 +998,10 @@ async function runConvertOrCompress() {
     .catch(() => {});
 }
 
+/**
+ * Masque et vide la section de résultats du traitement par lot (appelé avant chaque
+ * nouveau lot, et à chaque changement de mode/catégorie).
+ */
 function hideBatchResults() {
   batchResultsSection.hidden = true;
   batchResultsList.innerHTML = '';
@@ -1021,6 +1146,9 @@ async function runBatchConvertOrCompress() {
   }
 }
 
+/**
+ * Lance l'inspection du fichier sélectionné et affiche le résultat.
+ */
 async function runInspect() {
   setStatus(t('status.analyzing'));
   const category = inspectCategoryOfExt(extensionOf(selectedInspectFile));
@@ -1029,6 +1157,10 @@ async function runInspect() {
   renderInspectResult(items);
 }
 
+/**
+ * Lance la comparaison des deux fichiers sélectionnés (après re-vérification qu'ils sont
+ * bien de la même catégorie) et affiche le résultat.
+ */
 async function runCompare() {
   const category = categoryOfExt(extensionOf(selectedCompareFileA));
   const categoryB = categoryOfExt(extensionOf(selectedCompareFileB));
@@ -1077,6 +1209,9 @@ resetBtn.addEventListener('click', () => {
   setFile(null);
 });
 
+/**
+ * Met à jour l'état visuel (aria-pressed) des boutons de sélection de langue FR/EN.
+ */
 function syncLangButtons() {
   const lang = getLanguage();
   langFrBtn.setAttribute('aria-pressed', String(lang === 'fr'));

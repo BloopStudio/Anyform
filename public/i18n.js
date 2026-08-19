@@ -252,6 +252,11 @@ const STRINGS = {
 
 const LANG_STORAGE_KEY = 'anyform-lang';
 
+/**
+ * Détermine la langue initiale : préférence explicite déjà mémorisée en localStorage,
+ * sinon détection depuis les langues du navigateur (anglais si présent, français par
+ * défaut sinon).
+ */
 function detectLanguage() {
   const stored = localStorage.getItem(LANG_STORAGE_KEY);
   if (stored === 'fr' || stored === 'en') return stored;
@@ -261,10 +266,18 @@ function detectLanguage() {
 
 let currentLang = detectLanguage();
 
+/**
+ * @returns {'fr'|'en'} la langue actuellement active.
+ */
 function getLanguage() {
   return currentLang;
 }
 
+/**
+ * Change la langue active : mémorise le choix, met à jour `<html lang>`, réapplique les
+ * traductions statiques du DOM et prévient le reste de l'app (event `anyform:langchange`)
+ * pour que les éléments générés dynamiquement (ex. libellés de bouton) se retraduisent aussi.
+ */
 function setLanguage(lang) {
   currentLang = lang === 'en' ? 'en' : 'fr';
   localStorage.setItem(LANG_STORAGE_KEY, currentLang);
