@@ -31,11 +31,18 @@ const CATEGORY_EXT = {
   subtitle: ['srt', 'vtt', 'ass', 'ssa'],
 };
 
+// Extension d'un chemin de fichier, en minuscules et sans le point — répété tel quel dans
+// tout le fichier (détection de catégorie, conversion, compression, info) : un seul endroit
+// où changer si la règle d'extraction devait un jour évoluer.
+function extOf(filePath) {
+  return path.extname(filePath).slice(1).toLowerCase();
+}
+
 // Détecte la catégorie (image/données/audio/vidéo/sous-titres) à partir de l'extension du
 // fichier — aucune lecture du contenu, purement basé sur le nom (comme sur le web/desktop/
 // extension, pour un comportement cohérent partout).
 function detectCategory(filePath) {
-  const ext = path.extname(filePath).slice(1).toLowerCase();
+  const ext = extOf(filePath);
   for (const [category, exts] of Object.entries(CATEGORY_EXT)) {
     if (exts.includes(ext)) return category;
   }
@@ -51,8 +58,7 @@ const INSPECT_ONLY_EXT = { pdf: 'document', zip: 'archive', ttf: 'font', otf: 'f
 // Catégorie utilisée par la commande "info" : reprend detectCategory (formats convertibles)
 // et y ajoute les formats inspectables uniquement (voir INSPECT_ONLY_EXT ci-dessus).
 function detectInspectCategory(filePath) {
-  const ext = path.extname(filePath).slice(1).toLowerCase();
-  return detectCategory(filePath) || INSPECT_ONLY_EXT[ext] || null;
+  return detectCategory(filePath) || INSPECT_ONLY_EXT[extOf(filePath)] || null;
 }
 
 // "jpeg" et "jpg" sont le même format sous deux extensions différentes ; on les traite
@@ -78,7 +84,7 @@ async function convertOne(filePath, target, options) {
     throw new Error(t('cli.errUnrecognizedFileType', { file: filePath }));
   }
 
-  const sourceExt = normalizeExt(path.extname(filePath).slice(1).toLowerCase());
+  const sourceExt = normalizeExt(extOf(filePath));
   if (sourceExt === normalizeExt(target)) {
     throw new Error(t('cli.errSameFormat', { target }));
   }
@@ -125,7 +131,7 @@ async function convertOne(filePath, target, options) {
  * detectInspectCategory) mais est bien compressible, d'où le test séparé sur l'extension.
  */
 async function compressOne(filePath, level, options) {
-  const rawExt = path.extname(filePath).slice(1).toLowerCase();
+  const rawExt = extOf(filePath);
   const category = rawExt === 'pdf' ? 'document' : detectCategory(filePath);
   if (category !== 'image' && category !== 'audio' && category !== 'video' && category !== 'document') {
     throw new Error(t('cli.errCompressUnsupportedType', { file: filePath }));
@@ -136,7 +142,7 @@ async function compressOne(filePath, level, options) {
   const baseName = path.parse(filePath).name;
 
   if (category === 'image') {
-    const sourceExt = normalizeExt(path.extname(filePath).slice(1).toLowerCase());
+    const sourceExt = normalizeExt(extOf(filePath));
     const inputBuffer = fs.readFileSync(filePath);
     const result = await compressImage(inputBuffer, sourceExt, level);
     // result.ext peut différer de sourceExt : le HEIC/HEIF est décodé puis compressé en
@@ -156,7 +162,7 @@ async function compressOne(filePath, level, options) {
 
   // Audio et vidéo : contrairement à l'image, le format de sortie est toujours identique
   // à l'entrée (compressAudio/compressVideo réencodent avec le même codec/conteneur).
-  const ext = normalizeExt(path.extname(filePath).slice(1).toLowerCase());
+  const ext = normalizeExt(extOf(filePath));
   const outPath = path.join(outDir, `${baseName}-compresse.${ext}`);
   if (category === 'audio') {
     await compressAudio(filePath, outPath, ext, level);
@@ -234,7 +240,7 @@ program
     }
 
     try {
-      const sourceExt = normalizeExt(path.extname(filePath).slice(1).toLowerCase());
+      const sourceExt = normalizeExt(extOf(filePath));
       const items = await inspectFile(filePath, category, sourceExt);
 
       if (options.json) {
