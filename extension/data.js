@@ -2,11 +2,20 @@
  * Conversion de données tabulaires (CSV / JSON / XLSX), 100% côté navigateur via SheetJS.
  */
 
+/**
+ * Extrait l'extension d'un fichier (en minuscules, sans le point), ou '' si absente.
+ * Utilisée dans tout le projet pour deviner le format d'un fichier à partir de son nom.
+ */
 function extensionOf(file) {
   const m = /\.([a-z0-9]+)$/i.exec(file.name || '');
   return m ? m[1].toLowerCase() : '';
 }
 
+/**
+ * Charge un fichier de données (CSV/JSON/XLSX/XLS) dans un classeur SheetJS unifié, quel
+ * que soit son format d'origine, pour que le reste du code n'ait qu'une seule
+ * représentation à manipuler.
+ */
 async function fileToWorkbook(file) {
   const ext = extensionOf(file);
 

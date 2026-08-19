@@ -10,6 +10,10 @@ const HISTORY_LIMIT = 5;
 
 let historyDbPromise = null;
 
+/**
+ * Ouvre (ou crée au premier lancement) la base IndexedDB de l'historique, mise en cache
+ * dans `historyDbPromise` pour ne l'ouvrir qu'une seule fois par session.
+ */
 function openHistoryDb() {
   if (historyDbPromise) return historyDbPromise;
 
@@ -56,6 +60,10 @@ async function addHistoryEntry(entry) {
   return getHistoryEntries();
 }
 
+/**
+ * Supprime les entrées les plus anciennes pour ne garder que les HISTORY_LIMIT plus
+ * récentes, après l'ajout d'une nouvelle entrée.
+ */
 async function pruneHistory(db) {
   const all = await new Promise((resolve, reject) => {
     const tx = db.transaction(HISTORY_STORE, 'readonly');
@@ -93,6 +101,10 @@ async function getHistoryEntries() {
   return all.sort((a, b) => b.timestamp - a.timestamp);
 }
 
+/**
+ * Vide entièrement l'historique local (utilisé par le bouton "Vider" de la section
+ * historique).
+ */
 async function clearHistory() {
   const db = await openHistoryDb();
 

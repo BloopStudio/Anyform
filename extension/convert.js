@@ -11,14 +11,26 @@ const RASTER_MIME = {
   avif: 'image/avif',
 };
 
+/**
+ * Détecte un fichier SVG via son type MIME ou, à défaut (fichiers locaux souvent sans type
+ * MIME fiable), son extension.
+ */
 function isSvgFile(file) {
   return file.type === 'image/svg+xml' || /\.svg$/i.test(file.name);
 }
 
+/**
+ * Détecte un fichier HEIC/HEIF via son extension ou son type MIME — nécessaire pour savoir
+ * s'il faut passer par heic2any avant tout traitement, Canvas ne sachant pas décoder ce
+ * format nativement.
+ */
 function isHeicFile(file) {
   return /\.hei[cf]$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
 }
 
+/**
+ * Lit un fichier comme texte brut (utilisé pour le SVG, format texte).
+ */
 function readFileAsText(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -28,6 +40,10 @@ function readFileAsText(file) {
   });
 }
 
+/**
+ * Lit un fichier/Blob comme une data URL base64, format attendu par `<img>.src` pour
+ * charger l'image dans un canvas.
+ */
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -37,6 +53,10 @@ function readFileAsDataUrl(file) {
   });
 }
 
+/**
+ * Charge une data URL dans un élément `<img>` et attend qu'elle soit décodée, prête à être
+ * dessinée sur un canvas.
+ */
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();

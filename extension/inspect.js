@@ -6,6 +6,10 @@
  * (`<audio>`/`<video>`, événement `loadedmetadata`), pas d'un décodage complet du fichier.
  */
 
+/**
+ * Formate une durée en secondes en "m:ss" affichable, ou un libellé "inconnue" si la valeur
+ * n'est pas finie (durée non disponible pour ce fichier).
+ */
 function formatDuration(seconds) {
   if (!Number.isFinite(seconds)) return t('inspect.durationUnknown');
   const m = Math.floor(seconds / 60);
@@ -13,6 +17,9 @@ function formatDuration(seconds) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+/**
+ * Formate un timestamp en date/heure locale, dans le format propre à la langue active.
+ */
 function formatDate(timestamp) {
   return new Date(timestamp).toLocaleString(getLanguage() === 'en' ? 'en-US' : 'fr-FR');
 }
@@ -58,10 +65,17 @@ function detectAlpha(img) {
   return false;
 }
 
+/**
+ * Plus grand commun diviseur (Euclide), utilisé pour réduire un ratio largeur/hauteur à sa
+ * forme la plus simple (ex. 1920/1080 -> 16:9).
+ */
 function gcd(a, b) {
   return b === 0 ? a : gcd(b, a % b);
 }
 
+/**
+ * Formate des dimensions en ratio simplifié affichable ("16:9").
+ */
 function aspectRatioLabel(width, height) {
   const d = gcd(width, height) || 1;
   return `${width / d}:${height / d}`;
@@ -91,6 +105,9 @@ async function inspectTiff(file) {
 
 const EXIF_TYPE_SIZES = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 6: 1, 7: 1, 8: 2, 9: 4, 10: 8, 11: 4, 12: 8 };
 
+/**
+ * Lit une chaîne ASCII terminée par un octet nul (type EXIF 2) depuis un DataView.
+ */
 function readExifAscii(view, offset, size) {
   let out = '';
   for (let i = 0; i < size - 1; i++) {
@@ -101,6 +118,10 @@ function readExifAscii(view, offset, size) {
   return out;
 }
 
+/**
+ * Lit une valeur rationnelle EXIF (numérateur/dénominateur, 8 octets) et retourne le
+ * quotient décimal (0 si le dénominateur est nul, pour éviter une division par zéro).
+ */
 function readExifRational(view, offset, littleEndian) {
   const num = view.getUint32(offset, littleEndian);
   const den = view.getUint32(offset + 4, littleEndian);
@@ -137,6 +158,10 @@ function readExifIfd(view, tiffStart, ifdOffset, littleEndian, tagNames) {
   return { tags: out, subExifOffset, subGpsOffset };
 }
 
+/**
+ * Parcourt le sous-IFD GPS d'un bloc EXIF et retourne la position en degrés décimaux
+ * (latitude/longitude signées selon les références N/S/E/W), ou null si absente/incomplète.
+ */
 function readExifGps(view, tiffStart, gpsOffset, littleEndian) {
   const count = view.getUint16(tiffStart + gpsOffset, littleEndian);
   let latRef, lonRef, lat, lon;
@@ -196,6 +221,10 @@ function readExif(buffer, tiffStart) {
   return { ...ifd0Tags, ...exifTags, gps };
 }
 
+/**
+ * Convertit une date EXIF ("YYYY:MM:DD HH:mm:ss") en date/heure locale formatée, ou null si
+ * la chaîne ne correspond pas au format attendu.
+ */
 function formatExifDateTime(str) {
   const m = /^(\d{4}):(\d{2}):(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/.exec(str || '');
   if (!m) return null;
@@ -214,6 +243,11 @@ const EXIF_ORIENTATION_KEYS = {
   8: 'inspect.exif.orientation.rotated90ccw',
 };
 
+/**
+ * Convertit les tags EXIF bruts (lus par readExif) en liste de {label, value} affichable,
+ * en ne gardant que les champs présents et en les mettant en forme (ouverture "f/x.x",
+ * temps d'exposition en fraction, etc.).
+ */
 function exifItems(exif) {
   if (!exif) return [];
   const items = [];
@@ -278,6 +312,12 @@ async function inspectIco(file) {
   ];
 }
 
+/**
+ * Inspecte un fichier image et retourne ses propriétés spécifiques (dimensions, ratio,
+ * transparence, EXIF pour les JPEG...), en déléguant aux inspecteurs dédiés pour les
+ * formats structurellement différents (TIFF, ICO) et en traitant le SVG à part (pas de
+ * dimensions en pixels garanties).
+ */
 async function inspectImage(file) {
   const items = [];
   if (isSvgFile(file)) {
@@ -313,6 +353,11 @@ async function inspectImage(file) {
   return items;
 }
 
+/**
+ * Inspecte un PDF (version, nombre de pages, métadonnées du dictionnaire /Info, chiffrement,
+ * présence probable de texte sélectionnable) sans dépendance type pdf.js — mêmes techniques
+ * de lecture directe que le reste du fichier (TIFF/ICO/ZIP/fonts).
+ */
 async function inspectPdf(file) {
   const buffer = await file.arrayBuffer();
   // Latin-1 : chaque octet devient un caractère, ce qui préserve les offsets binaires exacts
@@ -371,6 +416,11 @@ async function inspectPdf(file) {
   return items;
 }
 
+/**
+ * Décode une chaîne littérale PDF ("(...)") en résolvant ses échappements (\n, \r, \t,
+ * parenthèses, antislash, séquences octales) — l'inverse de l'encodage utilisé pour écrire
+ * ces valeurs dans le fichier.
+ */
 function pdfDecodeLiteralString(raw) {
   let out = '';
   for (let i = 0; i < raw.length; i++) {
@@ -390,6 +440,9 @@ function pdfDecodeLiteralString(raw) {
   return out;
 }
 
+/**
+ * Décode une chaîne hexadécimale PDF ("<...>") en la chaîne d'octets correspondante.
+ */
 function pdfDecodeHexString(hex) {
   const clean = hex.replace(/\s/g, '');
   let out = '';
@@ -407,6 +460,10 @@ function pdfDecodeUnicode(str) {
   return out;
 }
 
+/**
+ * Cherche un champ du dictionnaire /Info du PDF (ex. "Title", "Author") sous sa forme
+ * littérale ou hexadécimale, et retourne sa valeur décodée en texte — null si absent.
+ */
 function pdfInfoField(text, key) {
   const literal = new RegExp(`/${key}\\s*\\(((?:[^()\\\\]|\\\\.)*)\\)`).exec(text);
   if (literal) return pdfDecodeUnicode(pdfDecodeLiteralString(literal[1]));
@@ -439,6 +496,12 @@ function findZipEocd(view) {
   return -1;
 }
 
+/**
+ * Inspecte une archive ZIP (nombre de fichiers/dossiers, tailles compressée/décompressée,
+ * taux de compression, type détecté, liste des fichiers) en lisant directement sa structure
+ * binaire (EOCD puis répertoire central), avec prise en charge de ZIP64 pour les grosses
+ * archives.
+ */
 async function inspectZip(file) {
   const buffer = await file.arrayBuffer();
   const view = new DataView(buffer);
@@ -532,6 +595,9 @@ async function readAudioSignalInfo(file) {
   }
 }
 
+/**
+ * Traduit un nombre de canaux audio en libellé lisible ("Mono", "Stéréo", ou "N canaux").
+ */
 function channelsLabel(n) {
   if (n === 1) return t('inspect.mono');
   if (n === 2) return t('inspect.stereo');
@@ -556,6 +622,11 @@ function id3DecodeText(bytes, encoding) {
   return text.replace(/ +$/, '').trim();
 }
 
+/**
+ * Lit un entier "syncsafe" ID3v2 (4 octets, seuls les 7 bits bas de chaque octet sont
+ * utilisés — évite qu'une taille de tag ne ressemble par accident à un octet de
+ * synchronisation MP3) et le recompose en entier normal.
+ */
 function id3ReadSyncsafeInt(view, offset) {
   return (view.getUint8(offset) << 21) | (view.getUint8(offset + 1) << 14) | (view.getUint8(offset + 2) << 7) | view.getUint8(offset + 3);
 }
@@ -605,6 +676,10 @@ function id3ParseV1(buffer) {
   return { TIT2: field(3, 30), TPE1: field(33, 30), TALB: field(63, 30), TYER: field(93, 4) };
 }
 
+/**
+ * Lit les tags ID3 (v2 en priorité, repli sur v1) d'un MP3 et retourne les champs présents
+ * (titre, artiste, album, année, genre, pochette) en liste {label, value} affichable.
+ */
 async function inspectId3Items(file) {
   const buffer = await file.arrayBuffer();
   const v2 = id3ParseV2(buffer) || {};
@@ -623,6 +698,10 @@ async function inspectId3Items(file) {
   return items;
 }
 
+/**
+ * Inspecte un fichier audio : durée et débit moyen (métadonnées natives du navigateur),
+ * canaux/fréquence d'échantillonnage (décodage Web Audio), tags ID3 pour les MP3.
+ */
 async function inspectAudio(file) {
   const meta = await readMediaMetadata(file, 'audio');
   const items = [{ label: t('inspect.duration'), value: formatDuration(meta.duration) }];
@@ -656,6 +735,8 @@ const MP4_CODEC_NAMES = {
 function findMp4VideoCodec(buffer) {
   const view = new DataView(buffer);
 
+  // Découpe une plage d'octets en box ISO-BMFF de premier niveau (taille 4 octets, ou taille
+  // étendue 64 bits si la taille classique vaut 1 — "largebox").
   function readBoxes(start, end) {
     const boxes = [];
     let offset = start;
@@ -698,6 +779,10 @@ function findMp4VideoCodec(buffer) {
   return null;
 }
 
+/**
+ * Inspecte un fichier vidéo : durée, résolution et ratio (métadonnées natives du
+ * navigateur), débit moyen, et codec vidéo pour les conteneurs ISO-BMFF (MP4/MOV).
+ */
 async function inspectVideo(file) {
   const meta = await readMediaMetadata(file, 'video');
   const items = [
@@ -757,6 +842,10 @@ function inferColumnTypes(sheet, rows) {
   return headers.map((h, i) => `${h || '?'}: ${dominants[i]}`).join(', ');
 }
 
+/**
+ * Inspecte un fichier de données tabulaires : feuilles, nombre de lignes/colonnes, en-têtes
+ * et type dominant de chaque colonne (sur la première feuille du classeur).
+ */
 async function inspectData(file) {
   const workbook = await fileToWorkbook(file);
   const items = [{ label: t('inspect.sheets'), value: workbook.SheetNames.join(', ') }];
@@ -784,6 +873,9 @@ function countOverlappingCues(cues) {
 
 const MAX_READABLE_WPM = 250;
 
+/**
+ * Compte les cues dont le débit de lecture dépasse MAX_READABLE_WPM mots/minute.
+ */
 function countTooFastCues(cues) {
   let count = 0;
   for (const cue of cues) {
@@ -795,6 +887,10 @@ function countTooFastCues(cues) {
   return count;
 }
 
+/**
+ * Inspecte un fichier de sous-titres : nombre de cues, premier/dernier timecode, plage
+ * couverte, et deux indicateurs qualité (chevauchements, cues trop rapides à lire).
+ */
 async function inspectSubtitle(file) {
   const text = await file.text();
   const ext = extensionOf(file);
@@ -850,6 +946,11 @@ function readFontNameTable(view, buffer, tableOffset) {
   return { family: foundWin[1] || found[1] || null, subfamily: foundWin[2] || found[2] || null };
 }
 
+/**
+ * Construit la liste {label, value} commune aux polices SFNT (TTF/OTF) et WOFF, à partir
+ * des tables déjà décodées : format, contours, famille (table 'name'), nombre de glyphes
+ * (table 'maxp'), nombre de tables.
+ */
 function fontItemsFromTables(view, buffer, tables, formatLabel, outlineFormat) {
   const items = [
     { label: t('inspect.font.format'), value: formatLabel },
@@ -864,6 +965,10 @@ function fontItemsFromTables(view, buffer, tables, formatLabel, outlineFormat) {
   return items;
 }
 
+/**
+ * Inspecte une police SFNT directe (TTF/OTF, pas de compression WOFF/WOFF2) en lisant sa
+ * version pour distinguer contours TrueType/CFF, puis ses tables.
+ */
 function inspectSfntFont(buffer) {
   const view = new DataView(buffer);
   const version = view.getUint32(0, false);
@@ -895,6 +1000,7 @@ async function inspectWoffFont(buffer) {
     dir[tag] = { offset: view.getUint32(rec + 4, false), compLength: view.getUint32(rec + 8, false), origLength: view.getUint32(rec + 12, false) };
   }
 
+  // Extrait et décompresse (si besoin) une table WOFF par son tag, ou null si absente.
   async function extractTable(tag) {
     const entry = dir[tag];
     if (!entry) return null;
@@ -934,6 +1040,10 @@ function inspectWoff2Font(buffer) {
   ];
 }
 
+/**
+ * Inspecte un fichier de police en dispatchant sur le bon décodeur selon sa signature
+ * binaire (WOFF, WOFF2, ou SFNT direct pour TTF/OTF).
+ */
 async function inspectFont(file) {
   const buffer = await file.arrayBuffer();
   if (buffer.byteLength < 4) return [];
