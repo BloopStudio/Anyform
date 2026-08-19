@@ -19,17 +19,27 @@ automatiquement avec `npm install`, aucune install système requise).
 Le type de fichier (image/données/audio/vidéo/sous-titres) est détecté automatiquement à
 partir de l'extension.
 
+`anyform info` reconnaît en plus des formats que le Convertisseur ne gère pas — PDF, ZIP et
+polices (TTF/OTF/WOFF/WOFF2) — car les inspecter n'a besoin que de lire leurs métadonnées,
+sans notion de format de sortie équivalent.
+
 ## Convertisseur et Compresseur
 
 En plus de la conversion (`-t/--to`), le CLI propose une compression sans changement de
-format (`-c/--compress`) pour réduire la taille des images, de l'audio et des vidéos :
+format (`-c/--compress`) pour réduire la taille des images, de l'audio, des vidéos et des
+PDF :
 
-- Images compressibles : PNG, JPG, WebP, GIF (via `sharp`) — le HEIC/HEIF est décodé puis
-  compressé en PNG, comme sur les autres plateformes
+- Images compressibles : PNG, JPG, WebP, GIF (via `sharp`), SVG (minification maison —
+  commentaires, espaces, précision décimale, title/desc/metadata) — le HEIC/HEIF est décodé
+  puis compressé en PNG, comme sur les autres plateformes
 - Audio compressible : MP3, OGG, M4A, AAC, Opus, WMA (bitrate réduit), FLAC
   (`-compression_level`, sans perte), WAV (fréquence d'échantillonnage réduite, PCM brut)
 - Vidéos compressibles : MP4, WebM, MOV, MKV, AVI, FLV, OGV (via `ffmpeg`, codec/conteneur
   d'origine conservé, audio non retouché)
+- PDF : reconstruction objet par objet — ne touche qu'aux images JPEG (DCTDecode) intégrées,
+  recompressées via `sharp` à la qualité du niveau choisi ; renvoyé tel quel s'il utilise des
+  flux d'objets compressés (`/ObjStm`) ou des générations d'objet non nulles, plutôt que de
+  risquer un fichier corrompu
 - Trois niveaux : `light`, `medium` (par défaut), `strong`
 
 Le fichier compressé est écrit à côté avec le suffixe `-compresse` (le format de sortie ne
@@ -51,7 +61,13 @@ anyform diff a.csv b.csv --out diff.txt
 - **`info <file>`** : affiche les propriétés d'un fichier (dimensions, durée, débit estimé,
   nombre de lignes/colonnes, nombre de sous-titres...) sans le modifier. `--json` pour une
   sortie machine-readable plutôt que du texte aligné. La durée/résolution audio/vidéo vient
-  de `ffmpeg -i` (parsing de la sortie standard, comme `ffprobe`), pas d'un ffprobe séparé.
+  de `ffmpeg -i` (parsing de la sortie standard, comme `ffprobe`), pas d'un ffprobe séparé —
+  le codec vidéo des MP4/MOV (H.264, H.265/HEVC, VP9, AV1...) en est extrait de la même
+  façon. S'y ajoutent : les tags ID3v2/ID3v1 des MP3 (titre, artiste, album, année, genre,
+  présence de pochette), les polices TTF/OTF/WOFF/WOFF2 (famille, contours TrueType/CFF,
+  nombre de glyphes — WOFF2 limité aux infos d'en-tête, la compression Brotli entière n'est
+  pas décodée), le nombre de pages et les métadonnées des PDF, et la liste des fichiers /
+  ratio de compression des ZIP.
 - **`diff <fileA> <fileB>`** : compare deux fichiers du même type. Images → diff pixel par
   pixel (PNG écrit sur disque, zones qui changent en rouge — `--out <path>` pour choisir où,
   par défaut `<fileA>-diff.png`). Données/sous-titres → diff ligne à ligne façon `git diff`
@@ -98,11 +114,12 @@ Il faut préciser exactement l'une des deux options `-t` ou `-c`.
 
 ## Structure
 
-- `lib/convert.js` — conversion d'images (sharp + potrace)
+- `lib/convert.js` — conversion et compression d'images (sharp + potrace), compression PDF
 - `lib/data.js` — conversion de données (SheetJS)
 - `lib/media.js` — conversion et compression audio/vidéo (ffmpeg-static)
 - `lib/subtitles.js` — conversion de sous-titres SRT/VTT/ASS (texte pur)
-- `lib/inspect.js` — lecture des propriétés d'un fichier, sans le modifier
+- `lib/inspect.js` — lecture des propriétés d'un fichier, sans le modifier (images,
+  audio/vidéo, données, sous-titres, PDF, ZIP, polices)
 - `lib/compare.js` — diff entre deux fichiers (image, texte ligne à ligne, ou empreinte)
 - `bin/anyform.js` — interface en ligne de commande (détection de type, routage,
   sous-commandes `info`/`diff`)
