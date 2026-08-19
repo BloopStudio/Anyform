@@ -34,6 +34,17 @@ function openHistoryDb() {
   return historyDbPromise;
 }
 
+// Récupère toutes les entrées de l'historique, non triées — utilisé à la fois par
+// pruneHistory (pour déterminer quoi supprimer) et getHistoryEntries (pour l'affichage).
+function getAllEntries(db) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HISTORY_STORE, 'readonly');
+    const request = tx.objectStore(HISTORY_STORE).getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
 /**
  * Ajoute une entrée à l'historique et ne garde que les HISTORY_LIMIT plus récentes.
  * @param {{ name: string, blob: Blob, mode: 'convert'|'compress', category: string, originalSize?: number }} entry
@@ -65,12 +76,7 @@ async function addHistoryEntry(entry) {
  * récentes, après l'ajout d'une nouvelle entrée.
  */
 async function pruneHistory(db) {
-  const all = await new Promise((resolve, reject) => {
-    const tx = db.transaction(HISTORY_STORE, 'readonly');
-    const request = tx.objectStore(HISTORY_STORE).getAll();
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+  const all = await getAllEntries(db);
 
   if (all.length <= HISTORY_LIMIT) return;
 
@@ -90,14 +96,7 @@ async function pruneHistory(db) {
  */
 async function getHistoryEntries() {
   const db = await openHistoryDb();
-
-  const all = await new Promise((resolve, reject) => {
-    const tx = db.transaction(HISTORY_STORE, 'readonly');
-    const request = tx.objectStore(HISTORY_STORE).getAll();
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-
+  const all = await getAllEntries(db);
   return all.sort((a, b) => b.timestamp - a.timestamp);
 }
 

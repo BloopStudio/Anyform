@@ -1,3 +1,28 @@
+// Listes de formats identiques en entrée et en sortie (contrairement à image/vidéo, qui ont
+// chacune un format supplémentaire réservé à la sortie — voir getOutputFormatOptions) :
+// partagées entre INPUT_FORMAT_OPTIONS et getOutputFormatOptions pour n'avoir qu'un seul
+// endroit à mettre à jour si un format est ajouté/retiré.
+const DATA_FORMAT_OPTIONS = [
+  { value: 'csv', label: 'CSV' },
+  { value: 'json', label: 'JSON' },
+  { value: 'xlsx', label: 'XLSX' },
+];
+const AUDIO_FORMAT_OPTIONS = [
+  { value: 'wav', label: 'WAV' },
+  { value: 'mp3', label: 'MP3' },
+  { value: 'ogg', label: 'OGG' },
+  { value: 'm4a', label: 'M4A' },
+  { value: 'flac', label: 'FLAC' },
+  { value: 'aac', label: 'AAC' },
+  { value: 'wma', label: 'WMA' },
+  { value: 'opus', label: 'Opus' },
+];
+const SUBTITLE_FORMAT_OPTIONS = [
+  { value: 'srt', label: 'SRT' },
+  { value: 'vtt', label: 'VTT' },
+  { value: 'ass', label: 'ASS' },
+];
+
 const INPUT_FORMAT_OPTIONS = {
   image: [
     { value: 'svg', label: 'SVG' },
@@ -8,21 +33,8 @@ const INPUT_FORMAT_OPTIONS = {
     { value: 'bmp', label: 'BMP' },
     { value: 'heic', label: 'HEIC' },
   ],
-  data: [
-    { value: 'csv', label: 'CSV' },
-    { value: 'json', label: 'JSON' },
-    { value: 'xlsx', label: 'XLSX' },
-  ],
-  audio: [
-    { value: 'wav', label: 'WAV' },
-    { value: 'mp3', label: 'MP3' },
-    { value: 'ogg', label: 'OGG' },
-    { value: 'm4a', label: 'M4A' },
-    { value: 'flac', label: 'FLAC' },
-    { value: 'aac', label: 'AAC' },
-    { value: 'wma', label: 'WMA' },
-    { value: 'opus', label: 'Opus' },
-  ],
+  data: DATA_FORMAT_OPTIONS,
+  audio: AUDIO_FORMAT_OPTIONS,
   video: [
     { value: 'mp4', label: 'MP4' },
     { value: 'webm', label: 'WebM' },
@@ -32,11 +44,7 @@ const INPUT_FORMAT_OPTIONS = {
     { value: 'flv', label: 'FLV' },
     { value: 'ogv', label: 'OGV' },
   ],
-  subtitle: [
-    { value: 'srt', label: 'SRT' },
-    { value: 'vtt', label: 'VTT' },
-    { value: 'ass', label: 'ASS' },
-  ],
+  subtitle: SUBTITLE_FORMAT_OPTIONS,
 };
 
 // Fonction plutôt que constante : les deux labels non-universels (SVG vectorisation, GIF
@@ -53,21 +61,8 @@ function getOutputFormatOptions() {
       { value: 'tiff', label: 'TIFF' },
       { value: 'svg', label: t('format.svgVector') },
     ],
-    data: [
-      { value: 'csv', label: 'CSV' },
-      { value: 'json', label: 'JSON' },
-      { value: 'xlsx', label: 'XLSX' },
-    ],
-    audio: [
-      { value: 'wav', label: 'WAV' },
-      { value: 'mp3', label: 'MP3' },
-      { value: 'ogg', label: 'OGG' },
-      { value: 'm4a', label: 'M4A' },
-      { value: 'flac', label: 'FLAC' },
-      { value: 'aac', label: 'AAC' },
-      { value: 'wma', label: 'WMA' },
-      { value: 'opus', label: 'Opus' },
-    ],
+    data: DATA_FORMAT_OPTIONS,
+    audio: AUDIO_FORMAT_OPTIONS,
     video: [
       { value: 'mp4', label: 'MP4' },
       { value: 'webm', label: 'WebM' },
@@ -78,11 +73,7 @@ function getOutputFormatOptions() {
       { value: 'ogv', label: 'OGV' },
       { value: 'gif', label: t('format.gifAnimated') },
     ],
-    subtitle: [
-      { value: 'srt', label: 'SRT' },
-      { value: 'vtt', label: 'VTT' },
-      { value: 'ass', label: 'ASS' },
-    ],
+    subtitle: SUBTITLE_FORMAT_OPTIONS,
   };
 }
 
@@ -373,6 +364,33 @@ function notifyIfHidden(category, compressing) {
 
   const label = t(compressing ? 'notify.compressionDone' : 'notify.conversionDone');
   new Notification('Anyform', { body: `${label} : ${resultFileName}` });
+}
+
+// Demande la permission de notification avant de lancer une conversion/compression
+// audio/vidéo potentiellement longue (voir notifyIfHidden) — doit partir d'un geste
+// utilisateur (le clic sur "Convertir"), pas être demandée au chargement de la page.
+function maybeRequestNotificationPermission(category) {
+  if (
+    (category === 'audio' || category === 'video') &&
+    typeof Notification !== 'undefined' &&
+    Notification.permission === 'default'
+  ) {
+    Notification.requestPermission().catch(() => {});
+  }
+}
+
+// Construit le nom de sortie d'un fichier converti/compressé à partir de son nom d'origine
+// (sans extension) et du format cible.
+function buildOutputName(sourceName, format, compressing) {
+  const baseName = sourceName.replace(/\.[^.]+$/, '');
+  return compressing ? `${baseName}-compresse.${format}` : `${baseName}.${format}`;
+}
+
+// Enregistre une entrée dans l'historique local et rafraîchit la liste affichée — échec
+// silencieux volontaire (voir renderHistory) : l'historique est un bonus, pas une garantie,
+// il ne doit jamais faire échouer une conversion/compression déjà réussie.
+function recordHistoryEntry(entry) {
+  addHistoryEntry(entry).then(renderHistory).catch(() => {});
 }
 
 clearHistoryBtn.addEventListener('click', () => {
@@ -959,13 +977,7 @@ async function runConvertOrCompress() {
   const level = compressionLevelSelect.value;
   const originalSize = selectedFile.size;
 
-  if (
-    (category === 'audio' || category === 'video') &&
-    typeof Notification !== 'undefined' &&
-    Notification.permission === 'default'
-  ) {
-    Notification.requestPermission().catch(() => {});
-  }
+  maybeRequestNotificationPermission(category);
 
   hideResult();
   setStatus(t(compressing ? 'status.compressing' : 'status.converting'));
@@ -978,8 +990,7 @@ async function runConvertOrCompress() {
     previewAfter.src = previewAfterUrl;
   }
 
-  const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
-  const outName = compressing ? `${baseName}-compresse.${format}` : `${baseName}.${format}`;
+  const outName = buildOutputName(selectedFile.name, format, compressing);
 
   downloadBlob(blob, outName);
 
@@ -987,15 +998,13 @@ async function runConvertOrCompress() {
   showResult(blob, outName, compressing ? originalSize : null);
   notifyIfHidden(category, compressing);
 
-  addHistoryEntry({
+  recordHistoryEntry({
     name: outName,
     blob,
     mode: compressing ? 'compress' : 'convert',
     category,
     originalSize: compressing ? originalSize : null,
-  })
-    .then(renderHistory)
-    .catch(() => {});
+  });
 }
 
 /**
@@ -1086,13 +1095,7 @@ async function runBatchConvertOrCompress() {
   const level = compressionLevelSelect.value;
   const files = selectedFiles;
 
-  if (
-    (category === 'audio' || category === 'video') &&
-    typeof Notification !== 'undefined' &&
-    Notification.permission === 'default'
-  ) {
-    Notification.requestPermission().catch(() => {});
-  }
+  maybeRequestNotificationPermission(category);
 
   hideBatchResults();
 
@@ -1106,8 +1109,7 @@ async function runBatchConvertOrCompress() {
     try {
       assertFileMatchesMode(file, category, compressing);
       const blob = await runConversion(file, category, format, level);
-      const baseName = file.name.replace(/\.[^.]+$/, '');
-      const outName = compressing ? `${baseName}-compresse.${format}` : `${baseName}.${format}`;
+      const outName = buildOutputName(file.name, format, compressing);
       results.push({ sourceName: file.name, name: outName, blob, originalSize: compressing ? originalSize : null, error: null });
     } catch (err) {
       results.push({ sourceName: file.name, error: err.message || t('error.generic') });
@@ -1134,15 +1136,13 @@ async function runBatchConvertOrCompress() {
   }
 
   for (const r of successes) {
-    addHistoryEntry({
+    recordHistoryEntry({
       name: r.name,
       blob: r.blob,
       mode: compressing ? 'compress' : 'convert',
       category,
       originalSize: r.originalSize,
-    })
-      .then(renderHistory)
-      .catch(() => {});
+    });
   }
 }
 

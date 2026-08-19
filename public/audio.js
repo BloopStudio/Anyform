@@ -20,18 +20,6 @@ const AUDIO_MIME = {
  * @param {(percent: number) => void} [onProgress]
  */
 async function convertAudio(file, targetFormat, onProgress) {
-  const ffmpeg = await loadFFmpeg(onProgress);
-
   const inExt = extensionOf(file) || 'wav';
-  const inName = `input.${inExt}`;
-  const outName = `output.${targetFormat}`;
-
-  await ffmpeg.writeFile(inName, new Uint8Array(await file.arrayBuffer()));
-  await ffmpeg.exec(['-i', inName, outName]);
-  const data = await ffmpeg.readFile(outName);
-
-  await ffmpeg.deleteFile(inName);
-  await ffmpeg.deleteFile(outName);
-
-  return new Blob([data.buffer], { type: AUDIO_MIME[targetFormat] || 'application/octet-stream' });
+  return runFfmpeg(file, inExt, targetFormat, [], onProgress, AUDIO_MIME[targetFormat]);
 }
