@@ -3,13 +3,13 @@
 Développé par **BloopStudio**. Convertisseur de formats de fichiers (images, données,
 audio, vidéo), 100% côté client, avec une interface web (drag & drop) déployée sur GitHub
 Pages. Trois autres branches proposent la même logique sous d'autres formes :
-[`cli-converter`](https://github.com/TheDEMON78/Anyform/tree/cli-converter) (ligne de
-commande), [`browser-extension`](https://github.com/TheDEMON78/Anyform/tree/browser-extension)
+[`cli-converter`](https://github.com/BloopStudio/Anyform/tree/cli-converter) (ligne de
+commande), [`browser-extension`](https://github.com/BloopStudio/Anyform/tree/browser-extension)
 (extension Chrome/Edge) et
-[`desktop-app`](https://github.com/TheDEMON78/Anyform/tree/desktop-app) (application de
+[`desktop-app`](https://github.com/BloopStudio/Anyform/tree/desktop-app) (application de
 bureau Electron).
 
-**En ligne : [thedemon78.github.io/Anyform](https://thedemon78.github.io/Anyform/)**
+**En ligne : [bloopstudio.github.io/Anyform](https://bloopstudio.github.io/Anyform/)**
 
 ## App web — 100% dans le navigateur
 
@@ -105,7 +105,7 @@ nulle part, effaçables via "Vider". Voir `public/history.js`.
 ## Confidentialité
 
 Aucune donnée n'est envoyée à un serveur, aucune collecte. Détails :
-[politique de confidentialité](https://thedemon78.github.io/Anyform/privacy.html).
+[politique de confidentialité](https://bloopstudio.github.io/Anyform/privacy.html).
 
 ## Déploiement sur GitHub Pages
 
