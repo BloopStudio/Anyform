@@ -4,10 +4,17 @@
  * (secondes, texte multi-ligne joint par \n).
  */
 
+/**
+ * Complète `n` avec des zéros devant jusqu'à `len` chiffres (ex. pad(5, 2) -> "05").
+ */
 function pad(n, len) {
   return String(n).padStart(len, '0');
 }
 
+/**
+ * Décompose une durée en secondes en heures/minutes/secondes/millisecondes, pour le format
+ * de temps SRT/VTT (précision milliseconde).
+ */
 function splitTimeMs(seconds) {
   let total = Math.round(seconds * 1000);
   const ms = total % 1000;
@@ -19,6 +26,10 @@ function splitTimeMs(seconds) {
   return { h, m, s, ms };
 }
 
+/**
+ * Décompose une durée en secondes en heures/minutes/secondes/centièmes, pour le format de
+ * temps ASS (précision centième, contrairement au millième de SRT/VTT).
+ */
 function splitTimeCentis(seconds) {
   let total = Math.round(seconds * 100);
   const cs = total % 100;
@@ -30,6 +41,11 @@ function splitTimeCentis(seconds) {
   return { h, m, s, cs };
 }
 
+/**
+ * Parse un timecode SRT ("00:00:01,000") ou VTT ("00:00:01.000") en secondes — les deux
+ * formats ne diffèrent que par le séparateur des millisecondes (virgule/point), géré par le
+ * même motif.
+ */
 function parseTimeGeneric(str) {
   const m = /(?:(\d+):)?(\d{2}):(\d{2})[.,](\d{1,3})/.exec(str);
   if (!m) return 0;
@@ -40,6 +56,9 @@ function parseTimeGeneric(str) {
   return h * 3600 + min * 60 + s + ms / 1000;
 }
 
+/**
+ * Parse un timecode ASS ("0:00:01.00", heures non paddées, centièmes) en secondes.
+ */
 function parseAssTime(str) {
   const m = /(\d+):(\d{2}):(\d{2})\.(\d{2})/.exec(str);
   if (!m) return 0;
@@ -50,16 +69,25 @@ function parseAssTime(str) {
   return h * 3600 + min * 60 + s + cs / 100;
 }
 
+/**
+ * Formate une durée en timecode SRT ("00:00:01,000").
+ */
 function formatSrtTime(seconds) {
   const { h, m, s, ms } = splitTimeMs(seconds);
   return `${pad(h, 2)}:${pad(m, 2)}:${pad(s, 2)},${pad(ms, 3)}`;
 }
 
+/**
+ * Formate une durée en timecode VTT ("00:00:01.000").
+ */
 function formatVttTime(seconds) {
   const { h, m, s, ms } = splitTimeMs(seconds);
   return `${pad(h, 2)}:${pad(m, 2)}:${pad(s, 2)}.${pad(ms, 3)}`;
 }
 
+/**
+ * Formate une durée en timecode ASS ("0:00:01.00", heures non paddées, centièmes).
+ */
 function formatAssTime(seconds) {
   const { h, m, s, cs } = splitTimeCentis(seconds);
   return `${h}:${pad(m, 2)}:${pad(s, 2)}.${pad(cs, 2)}`;
@@ -139,11 +167,19 @@ function parseAss(text) {
   return cues;
 }
 
+/**
+ * Parse un fichier de sous-titres vers la représentation interne commune (liste de cues),
+ * en choisissant le parseur selon l'extension source.
+ * @returns {Array<{start: number, end: number, text: string}>}
+ */
 function parseSubtitle(text, sourceExt) {
   if (sourceExt === 'ass' || sourceExt === 'ssa') return parseAss(text);
   return parseSrtOrVtt(text);
 }
 
+/**
+ * Sérialise des cues au format SRT (numérotées, séparées par une ligne vide).
+ */
 function writeSrt(cues) {
   return (
     cues
@@ -153,6 +189,9 @@ function writeSrt(cues) {
   );
 }
 
+/**
+ * Sérialise des cues au format VTT (en-tête "WEBVTT" obligatoire, pas de numérotation).
+ */
 function writeVtt(cues) {
   const body = cues.map((c) => `${formatVttTime(c.start)} --> ${formatVttTime(c.end)}\n${c.text}\n`).join('\n');
   return (`WEBVTT\n\n${body}`).trim() + '\n';
@@ -182,6 +221,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
   return header + lines.join('\n') + '\n';
 }
 
+/**
+ * Sérialise des cues vers le format cible demandé (srt/vtt/ass/ssa).
+ */
 function writeSubtitle(cues, targetExt) {
   if (targetExt === 'srt') return writeSrt(cues);
   if (targetExt === 'vtt') return writeVtt(cues);

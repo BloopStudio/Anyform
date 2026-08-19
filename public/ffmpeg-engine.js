@@ -5,6 +5,13 @@
 
 let ffmpegPromise = null;
 
+/**
+ * Charge et initialise ffmpeg.wasm une seule fois par session (mise en cache dans
+ * `ffmpegPromise`) : le téléchargement/l'instanciation du binaire WASM est coûteux, pas la
+ * peine de le refaire à chaque conversion audio/vidéo.
+ * @param {(percent: number) => void} [onProgress] rappelé pendant l'exécution ffmpeg (pas le chargement lui-même)
+ * @returns {Promise<FFmpeg>} l'instance ffmpeg prête à l'emploi
+ */
 async function loadFFmpeg(onProgress) {
   if (ffmpegPromise) return ffmpegPromise;
 
