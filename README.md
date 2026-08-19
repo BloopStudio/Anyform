@@ -8,6 +8,6 @@ Les autres façons d'utiliser Anyform :
 
 | Branche | Description |
 | --- | --- |
-| [`web-converter`](https://github.com/TheDEMON78/Anyform/tree/web-converter) | App web, déployée sur [thedemon78.github.io/Anyform](https://thedemon78.github.io/Anyform/) |
-| [`cli-converter`](https://github.com/TheDEMON78/Anyform/tree/cli-converter) | Outil en ligne de commande |
-| [`desktop-app`](https://github.com/TheDEMON78/Anyform/tree/desktop-app) | Application de bureau Electron |
+| [`web-converter`](https://github.com/BloopStudio/Anyform/tree/web-converter) | App web, déployée sur [bloopstudio.github.io/Anyform](https://bloopstudio.github.io/Anyform/) |
+| [`cli-converter`](https://github.com/BloopStudio/Anyform/tree/cli-converter) | Outil en ligne de commande |
+| [`desktop-app`](https://github.com/BloopStudio/Anyform/tree/desktop-app) | Application de bureau Electron |
