@@ -4,7 +4,7 @@
 
 Merci de **ne pas** ouvrir d'issue publique pour signaler une faille de sécurité.
 
-Méthode préférée : utiliser l'onglet **[Security → Report a vulnerability](https://github.com/TheDEMON78/Anyform/security/advisories/new)**
+Méthode préférée : utiliser l'onglet **[Security → Report a vulnerability](https://github.com/BloopStudio/Anyform/security/advisories/new)**
 du dépôt (signalement privé, visible uniquement par les mainteneurs jusqu'à résolution).
 
 Si cette option n'est pas disponible, ouvrir une issue minimale (sans détail

@@ -30,7 +30,7 @@ Exemples de comportements inacceptables :
 ## Application
 
 Les cas de comportement abusif, harcelant ou autrement inacceptable peuvent être signalés
-en ouvrant une [issue](https://github.com/TheDEMON78/Anyform/issues) ou en contactant les
+en ouvrant une [issue](https://github.com/BloopStudio/Anyform/issues) ou en contactant les
 mainteneurs directement. Toutes les plaintes seront examinées et donneront lieu à une
 réponse jugée nécessaire et appropriée aux circonstances.
 

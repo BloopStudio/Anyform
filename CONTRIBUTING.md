@@ -21,11 +21,11 @@ d'Anyform vit sur sa propre branche indépendante :
 `web-converter`.
 
 Détails complets du modèle de branches et des pipelines CI :
-[page Architecture et CI-CD du wiki](https://github.com/TheDEMON78/Anyform/wiki/Architecture-et-CI-CD).
+[page Architecture et CI-CD du wiki](https://github.com/BloopStudio/Anyform/wiki/Architecture-et-CI-CD).
 
 ## Avant d'ouvrir une pull request
 
-1. Vérifier qu'une [issue](https://github.com/TheDEMON78/Anyform/issues) ou une PR
+1. Vérifier qu'une [issue](https://github.com/BloopStudio/Anyform/issues) ou une PR
    similaire n'existe pas déjà.
 2. Partir de la bonne branche (voir tableau ci-dessus).
 3. Tester localement — chaque branche a ses instructions dans son propre `README.md`
@@ -43,7 +43,7 @@ en français).
 
 ## Signaler un bug ou proposer une fonctionnalité
 
-Ouvrir une [issue](https://github.com/TheDEMON78/Anyform/issues) en précisant sur quelle
+Ouvrir une [issue](https://github.com/BloopStudio/Anyform/issues) en précisant sur quelle
 forme d'Anyform (web / CLI / extension / bureau) porte le problème.
 
 ## Sécurité

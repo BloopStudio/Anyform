@@ -8,22 +8,22 @@ branches ci-dessous, chacune correspondant à une façon d'utiliser Anyform.
 
 ## 🔗 Essayer maintenant
 
-**[thedemon78.github.io/Anyform](https://thedemon78.github.io/Anyform/)** — aucune
+**[bloopstudio.github.io/Anyform](https://bloopstudio.github.io/Anyform/)** — aucune
 installation, ouvre directement dans le navigateur.
 
 ## Branches
 
 | Branche | Description |
 | --- | --- |
-| [`web-converter`](https://github.com/TheDEMON78/Anyform/tree/web-converter) | App web statique déployée sur GitHub Pages (source de la page d'accueil ci-dessus) |
-| [`cli-converter`](https://github.com/TheDEMON78/Anyform/tree/cli-converter) | Outil en ligne de commande (non publié sur npm : `git clone` + `npm install` + `npm link`) |
-| [`browser-extension`](https://github.com/TheDEMON78/Anyform/tree/browser-extension) | Extension Chrome/Edge (clic droit sur une image → convertir) |
-| [`desktop-app`](https://github.com/TheDEMON78/Anyform/tree/desktop-app) | App de bureau Electron (Windows/macOS/Linux) |
-| [`node-library`](https://github.com/TheDEMON78/Anyform/tree/node-library) | Bibliothèque Node.js (`npm install anyform`) — mêmes fonctions que le CLI, appelables directement depuis un autre programme |
+| [`web-converter`](https://github.com/BloopStudio/Anyform/tree/web-converter) | App web statique déployée sur GitHub Pages (source de la page d'accueil ci-dessus) |
+| [`cli-converter`](https://github.com/BloopStudio/Anyform/tree/cli-converter) | Outil en ligne de commande (non publié sur npm : `git clone` + `npm install` + `npm link`) |
+| [`browser-extension`](https://github.com/BloopStudio/Anyform/tree/browser-extension) | Extension Chrome/Edge (clic droit sur une image → convertir) |
+| [`desktop-app`](https://github.com/BloopStudio/Anyform/tree/desktop-app) | App de bureau Electron (Windows/macOS/Linux) |
+| [`node-library`](https://github.com/BloopStudio/Anyform/tree/node-library) | Bibliothèque Node.js (`npm install anyform`) — mêmes fonctions que le CLI, appelables directement depuis un autre programme |
 
 ## Téléchargements
 
-- App de bureau (.exe / .dmg / .AppImage) : [dernière release](https://github.com/TheDEMON78/Anyform/releases/latest)
+- App de bureau (.exe / .dmg / .AppImage) : [dernière release](https://github.com/BloopStudio/Anyform/releases/latest)
 - Extension navigateur : bientôt sur le Chrome Web Store
 
 ## Convertisseur, Compresseur, Inspecteur, Comparateur
@@ -53,11 +53,11 @@ exposent les mêmes fonctions via `-c`/`info`/`diff` plutôt que des onglets) :
 ## Confidentialité
 
 Aucune collecte de données, traitement 100% local. Détails :
-[politique de confidentialité](https://thedemon78.github.io/Anyform/privacy.html).
+[politique de confidentialité](https://bloopstudio.github.io/Anyform/privacy.html).
 
 ## Documentation
 
-Le [wiki](https://github.com/TheDEMON78/Anyform/wiki) détaille chaque forme d'Anyform,
+Le [wiki](https://github.com/BloopStudio/Anyform/wiki) détaille chaque forme d'Anyform,
 l'architecture du dépôt et les pipelines CI/CD.
 
 ## Contribuer
