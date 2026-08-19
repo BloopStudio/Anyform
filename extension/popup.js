@@ -1,3 +1,28 @@
+// Listes de formats identiques en entrée et en sortie (contrairement à image/vidéo, qui ont
+// chacune un format supplémentaire réservé à la sortie — voir getOutputFormatOptions) :
+// partagées entre INPUT_FORMAT_OPTIONS et getOutputFormatOptions pour n'avoir qu'un seul
+// endroit à mettre à jour si un format est ajouté/retiré.
+const DATA_FORMAT_OPTIONS = [
+  { value: 'csv', label: 'CSV' },
+  { value: 'json', label: 'JSON' },
+  { value: 'xlsx', label: 'XLSX' },
+];
+const AUDIO_FORMAT_OPTIONS = [
+  { value: 'wav', label: 'WAV' },
+  { value: 'mp3', label: 'MP3' },
+  { value: 'ogg', label: 'OGG' },
+  { value: 'm4a', label: 'M4A' },
+  { value: 'flac', label: 'FLAC' },
+  { value: 'aac', label: 'AAC' },
+  { value: 'wma', label: 'WMA' },
+  { value: 'opus', label: 'Opus' },
+];
+const SUBTITLE_FORMAT_OPTIONS = [
+  { value: 'srt', label: 'SRT' },
+  { value: 'vtt', label: 'VTT' },
+  { value: 'ass', label: 'ASS' },
+];
+
 // Formats d'entrée proposés par catégorie pour le Convertisseur/Compresseur. Ne couvre pas
 // tous les formats qu'Anyform sait lire (voir INSPECT_ONLY_EXTS plus bas) : uniquement ceux
 // qu'on peut aussi reconvertir en sortie depuis le navigateur.
@@ -11,21 +36,8 @@ const INPUT_FORMAT_OPTIONS = {
     { value: 'bmp', label: 'BMP' },
     { value: 'heic', label: 'HEIC' },
   ],
-  data: [
-    { value: 'csv', label: 'CSV' },
-    { value: 'json', label: 'JSON' },
-    { value: 'xlsx', label: 'XLSX' },
-  ],
-  audio: [
-    { value: 'wav', label: 'WAV' },
-    { value: 'mp3', label: 'MP3' },
-    { value: 'ogg', label: 'OGG' },
-    { value: 'm4a', label: 'M4A' },
-    { value: 'flac', label: 'FLAC' },
-    { value: 'aac', label: 'AAC' },
-    { value: 'wma', label: 'WMA' },
-    { value: 'opus', label: 'Opus' },
-  ],
+  data: DATA_FORMAT_OPTIONS,
+  audio: AUDIO_FORMAT_OPTIONS,
   video: [
     { value: 'mp4', label: 'MP4' },
     { value: 'webm', label: 'WebM' },
@@ -35,11 +47,7 @@ const INPUT_FORMAT_OPTIONS = {
     { value: 'flv', label: 'FLV' },
     { value: 'ogv', label: 'OGV' },
   ],
-  subtitle: [
-    { value: 'srt', label: 'SRT' },
-    { value: 'vtt', label: 'VTT' },
-    { value: 'ass', label: 'ASS' },
-  ],
+  subtitle: SUBTITLE_FORMAT_OPTIONS,
 };
 
 // Fonction plutôt que constante : les deux labels non-universels (SVG vectorisation, GIF
@@ -56,21 +64,8 @@ function getOutputFormatOptions() {
       { value: 'tiff', label: 'TIFF' },
       { value: 'svg', label: t('format.svgVector') },
     ],
-    data: [
-      { value: 'csv', label: 'CSV' },
-      { value: 'json', label: 'JSON' },
-      { value: 'xlsx', label: 'XLSX' },
-    ],
-    audio: [
-      { value: 'wav', label: 'WAV' },
-      { value: 'mp3', label: 'MP3' },
-      { value: 'ogg', label: 'OGG' },
-      { value: 'm4a', label: 'M4A' },
-      { value: 'flac', label: 'FLAC' },
-      { value: 'aac', label: 'AAC' },
-      { value: 'wma', label: 'WMA' },
-      { value: 'opus', label: 'Opus' },
-    ],
+    data: DATA_FORMAT_OPTIONS,
+    audio: AUDIO_FORMAT_OPTIONS,
     video: [
       { value: 'mp4', label: 'MP4' },
       { value: 'webm', label: 'WebM' },
@@ -81,11 +76,7 @@ function getOutputFormatOptions() {
       { value: 'ogv', label: 'OGV' },
       { value: 'gif', label: t('format.gifAnimated') },
     ],
-    subtitle: [
-      { value: 'srt', label: 'SRT' },
-      { value: 'vtt', label: 'VTT' },
-      { value: 'ass', label: 'ASS' },
-    ],
+    subtitle: SUBTITLE_FORMAT_OPTIONS,
   };
 }
 
