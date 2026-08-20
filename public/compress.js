@@ -150,6 +150,36 @@ async function recompressJpegBytes(bytes, quality) {
  * @param {File} file
  * @param {'light'|'medium'|'strong'} level
  */
+// Découpe le texte latin1 d'un PDF en objets ("N G obj" ... "endobj") en repérant chaque
+// en-tête d'objet par regex puis en cherchant le "endobj" suivant par simple recherche de
+// sous-chaîne (indexOf), plutôt que par un unique motif glouton `obj([\s\S]*?)endobj` sur
+// tout le texte : un PDF hostile truffé d'occurrences de "N G obj" sans "endobj"
+// correspondant ferait alors rebalayer toute la fin du fichier à chaque tentative (coût
+// quadratique — un PDF de quelques dizaines de Mo peut alors geler l'onglet plusieurs
+// dizaines de secondes en plein thread principal). Ici `lastIndex` saute directement après
+// chaque "endobj" trouvé, donc chaque octet du fichier n'est examiné qu'une fois au total
+// (coût linéaire). Défini ici (compress.js charge avant inspect.js dans index.html) et
+// réutilisé par inspectPdf (inspect.js).
+function extractPdfObjects(text) {
+  const objStartRe = /(\d+)\s+(\d+)\s+obj\b/g;
+  const objects = [];
+  let m;
+  while ((m = objStartRe.exec(text))) {
+    const bodyStart = objStartRe.lastIndex;
+    const endIdx = text.indexOf('endobj', bodyStart);
+    if (endIdx === -1) break; // PDF tronqué/malformé : on s'arrête là où le découpage reste fiable
+    objects.push({
+      num: parseInt(m[1], 10),
+      gen: m[2],
+      body: text.slice(bodyStart, endIdx),
+      absoluteStart: m.index,
+      byteLength: endIdx + 'endobj'.length - m.index,
+    });
+    objStartRe.lastIndex = endIdx + 'endobj'.length;
+  }
+  return objects;
+}
+
 async function compressPdf(file, level = 'medium') {
   const buffer = await file.arrayBuffer();
   const bytes = new Uint8Array(buffer);
@@ -158,17 +188,13 @@ async function compressPdf(file, level = 'medium') {
 
   if (/\/Type\s*\/ObjStm\b/.test(text)) return file;
 
-  const objRe = /(\d+)\s+(\d+)\s+obj([\s\S]*?)endobj/g;
-  const objects = [];
-  let m;
-  let maxObjNum = 0;
-  while ((m = objRe.exec(text))) {
-    const num = parseInt(m[1], 10);
-    if (m[2] !== '0') return file; // génération non nulle : cas rare, on ne le gère pas
-    maxObjNum = Math.max(maxObjNum, num);
-    objects.push({ num, body: m[3], absoluteStart: m.index, byteLength: m[0].length });
-  }
+  const objects = extractPdfObjects(text);
   if (!objects.length) return file;
+  let maxObjNum = 0;
+  for (const obj of objects) {
+    if (obj.gen !== '0') return file; // génération non nulle : cas rare, on ne le gère pas
+    maxObjNum = Math.max(maxObjNum, obj.num);
+  }
 
   for (const obj of objects) {
     if (!/\/Subtype\s*\/Image/.test(obj.body) || !/\/Filter\s*\/DCTDecode/.test(obj.body)) continue;

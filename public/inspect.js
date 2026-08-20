@@ -383,7 +383,7 @@ async function inspectPdf(file) {
   // On découpe le texte en objets PDF (délimités par "N G obj" ... "endobj", toujours en
   // clair même dans un PDF dont les flux de contenu sont compressés) pour chercher le nœud
   // racine /Pages (qui porte le /Count total) et, en repli, compter les objets /Type /Page.
-  const objects = [...text.matchAll(/\d+\s+\d+\s+obj([\s\S]*?)endobj/g)].map((m) => m[1]);
+  const objects = extractPdfObjects(text).map((o) => o.body);
   const pageTreeCounts = objects
     .filter((body) => /\/Type\s*\/Pages\b/.test(body))
     .map((body) => /\/Count\s+(\d+)/.exec(body))
