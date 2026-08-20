@@ -1,6 +1,5 @@
 # Anyform
 
-![Incrémenter la version](https://github.com/BloopStudio/Anyform/actions/workflows/bump-version.yml/badge.svg)
 ![Déployer sur GitHub Pages](https://github.com/BloopStudio/Anyform/actions/workflows/deploy-pages.yml/badge.svg)
 
 Développé par **BloopStudio**. Convertisseur de formats de fichiers (images, données,
