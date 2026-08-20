@@ -1,5 +1,8 @@
 # Anyform
 
+![Incrémenter la version](https://github.com/BloopStudio/Anyform/actions/workflows/bump-version.yml/badge.svg)
+![Déployer sur GitHub Pages](https://github.com/BloopStudio/Anyform/actions/workflows/deploy-pages.yml/badge.svg)
+
 Développé par **BloopStudio**. Convertisseur de formats de fichiers (images, données,
 audio, vidéo), 100% côté client, avec une interface web (drag & drop) déployée sur GitHub
 Pages. Trois autres branches proposent la même logique sous d'autres formes :
