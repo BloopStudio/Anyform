@@ -1,9 +1,9 @@
 /**
  * Service worker MV3 de l'extension (déclaré dans manifest.json sous "background") : tourne
  * en arrière-plan sans page visible, s'arrête quand inactif et redémarre à la demande. Son
- * seul rôle ici est le menu contextuel "Convertir cette image" — la popup (popup.js) fait
- * tout le reste et n'a besoin d'aucune communication directe avec ce worker en dehors de
- * chrome.storage.local (voir plus bas).
+ * seul rôle ici est le sous-menu contextuel "Anyform" (Convertir/Compresser/Inspecter cette
+ * image) — la popup (popup.js) fait tout le reste et n'a besoin d'aucune communication
+ * directe avec ce worker en dehors de chrome.storage.local (voir plus bas).
  *
  * Permissions manifest utilisées ici : "contextMenus" (créer l'entrée du clic droit),
  * "storage" (chrome.storage.local, seul canal pour passer le fichier à la popup — un
@@ -18,18 +18,41 @@
  * ffmpeg.wasm ('wasm-unsafe-eval'), tout en gardant 'self' comme seule origine de script
  * autorisée (aucun script distant, cohérent avec la promesse "100% local" de l'extension).
  */
-const MENU_ID = 'converter-convert-image';
+const PARENT_MENU_ID = 'anyform-image-actions';
+
+// Un mode par entrée du sous-menu — la valeur est propagée à la popup via l'URL
+// (?pending=1&mode=...) pour qu'elle s'ouvre directement dans le bon onglet plutôt que
+// toujours sur Convertisseur.
+const MENU_ID_TO_MODE = {
+  'anyform-convert-image': 'convert',
+  'anyform-compress-image': 'compress',
+  'anyform-inspect-image': 'inspect',
+};
 
 /**
- * Crée l'entrée de menu contextuel au clic droit sur une image, exécuté une fois à
- * l'installation/mise à jour de l'extension (onInstalled) plutôt qu'à chaque démarrage du
- * service worker — chrome.contextMenus.create échouerait avec une erreur "duplicate id" s'il
- * était appelé plus d'une fois par session du menu contextuel.
+ * Crée le sous-menu contextuel au clic droit sur une image (Convertir/Compresser/Inspecter),
+ * exécuté une fois à l'installation/mise à jour de l'extension (onInstalled) plutôt qu'à
+ * chaque démarrage du service worker — chrome.contextMenus.create échouerait avec une erreur
+ * "duplicate id" s'il était appelé plus d'une fois par session du menu contextuel.
  */
 chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({ id: PARENT_MENU_ID, title: 'Anyform', contexts: ['image'] });
   chrome.contextMenus.create({
-    id: MENU_ID,
-    title: 'Convertir cette image avec Anyform',
+    id: 'anyform-convert-image',
+    parentId: PARENT_MENU_ID,
+    title: 'Convertir cette image',
+    contexts: ['image'],
+  });
+  chrome.contextMenus.create({
+    id: 'anyform-compress-image',
+    parentId: PARENT_MENU_ID,
+    title: 'Compresser cette image',
+    contexts: ['image'],
+  });
+  chrome.contextMenus.create({
+    id: 'anyform-inspect-image',
+    parentId: PARENT_MENU_ID,
+    title: 'Inspecter cette image',
     contexts: ['image'],
   });
 });
@@ -43,7 +66,8 @@ chrome.runtime.onInstalled.addListener(() => {
  * n'importe quelle URL grâce à host_permissions: ["<all_urls>"] dans le manifest.
  */
 chrome.contextMenus.onClicked.addListener(async (info) => {
-  if (info.menuItemId !== MENU_ID || !info.srcUrl) return;
+  const mode = MENU_ID_TO_MODE[info.menuItemId];
+  if (!mode || !info.srcUrl) return;
 
   try {
     const res = await fetch(info.srcUrl);
@@ -54,7 +78,7 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
     const name = guessFileName(info.srcUrl, blob.type);
 
     await chrome.storage.local.set({ pendingFile: { dataUrl, name, type: blob.type } });
-    chrome.tabs.create({ url: chrome.runtime.getURL('popup.html?pending=1') });
+    chrome.tabs.create({ url: chrome.runtime.getURL(`popup.html?pending=1&mode=${mode}`) });
   } catch (err) {
     console.error('Anyform: impossible de récupérer cette image.', err);
   }

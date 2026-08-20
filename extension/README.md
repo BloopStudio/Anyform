@@ -9,9 +9,9 @@ locale (rien n'est envoyé sur internet).
 - **Popup** (icône de la barre d'outils) : même interface que l'app web — quatre modes,
   **Convertisseur**, **Compresseur**, **Inspecteur** et **Comparateur**, sélectionnables
   via un onglet en haut.
-- **Menu contextuel** : clic droit sur une image dans une page → "Convertir cette image
-  avec Anyform" → l'image s'ouvre dans un nouvel onglet avec le popup pré-rempli, il ne
-  reste qu'à choisir le format de sortie.
+- **Menu contextuel** : clic droit sur une image dans une page → sous-menu **Anyform** avec
+  trois entrées (**Convertir**, **Compresser**, **Inspecter** cette image) → l'image s'ouvre
+  dans un nouvel onglet avec le popup pré-rempli, déjà sur le bon mode.
 - Thème clair/sombre automatique selon les préférences de l'appareil.
 - Historique local des 5 derniers fichiers (nom, taille, bouton "Télécharger"), stocké dans
   IndexedDB — voir `history.js`.
@@ -62,7 +62,7 @@ déclare donc explicitement `content_security_policy.extension_pages` avec
 
 ## Permissions
 
-- `contextMenus` : pour l'entrée de menu clic droit sur une image
+- `contextMenus` : pour le sous-menu clic droit sur une image (Convertir/Compresser/Inspecter)
 - `storage` : pour transmettre l'image sélectionnée du menu contextuel vers le popup
 - `downloads` : pour proposer le téléchargement du fichier converti
 - `host_permissions: <all_urls>` : nécessaire pour pouvoir récupérer (fetch) l'image

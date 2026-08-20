@@ -981,8 +981,9 @@ syncLangButtons();
 syncUiForCategory();
 
 /**
- * Si la popup a été ouverte depuis le menu contextuel ("Convertir cette image"), précharge
- * le fichier déposé par background.js dans chrome.storage.local.
+ * Si la popup a été ouverte depuis le sous-menu contextuel Anyform (Convertir/Compresser/
+ * Inspecter cette image), précharge le fichier déposé par background.js dans
+ * chrome.storage.local, dans le mode correspondant à l'entrée cliquée.
  */
 async function loadPendingFileFromContextMenu() {
   const params = new URLSearchParams(location.search);
@@ -998,9 +999,18 @@ async function loadPendingFileFromContextMenu() {
   const file = new File([blob], pendingFile.name, { type: pendingFile.type });
   const ext = extensionOf(file);
 
+  const mode = params.get('mode');
+  if (mode === 'convert' || mode === 'compress' || mode === 'inspect') onModeChange(mode);
   onCategoryChange('image');
 
-  if ([...sourceFormatSelect.options].some((opt) => opt.value === ext)) {
+  if (isInspectMode()) {
+    setInspectFile(file);
+    return;
+  }
+
+  // Compresseur : la validation se fait sur COMPRESS_FORMATS, pas sur sourceFormatSelect —
+  // rien à synchroniser ici, contrairement au Convertisseur.
+  if (!isCompressing() && [...sourceFormatSelect.options].some((opt) => opt.value === ext)) {
     sourceFormatSelect.value = ext;
     updateAcceptedFileType();
     refreshOutputOptions();
