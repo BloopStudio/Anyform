@@ -35,8 +35,7 @@ async function compressImage(file, level = 'medium') {
     throw new Error(t('error.compressUnsupportedFormat', { ext: ext || '?' }));
   }
 
-  const dataUrl = await readFileAsDataUrl(sourceBlob);
-  const img = await loadImage(dataUrl);
+  const img = await loadImageFromBlob(sourceBlob);
 
   const isLossy = mime === 'image/jpeg' || mime === 'image/webp';
   const scale = isLossy ? 1 : IMAGE_SCALE_BY_LEVEL[level] ?? 1;

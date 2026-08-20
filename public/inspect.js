@@ -349,8 +349,7 @@ async function inspectImage(file) {
   if (ext === 'ico') return inspectIco(file);
 
   const sourceBlob = isHeicFile(file) ? await heicToPngBlob(file) : file;
-  const dataUrl = await readFileAsDataUrl(sourceBlob);
-  const img = await loadImage(dataUrl);
+  const img = await loadImageFromBlob(sourceBlob);
   items.push({ label: t('inspect.dimensions'), value: `${img.naturalWidth} × ${img.naturalHeight} px` });
   items.push({ label: t('inspect.ratio'), value: (img.naturalWidth / img.naturalHeight).toFixed(3) });
   items.push({ label: t('inspect.hasAlpha'), value: t(detectAlpha(img) ? 'inspect.yes' : 'inspect.no') });
