@@ -41,21 +41,8 @@ function readFileAsText(file) {
 }
 
 /**
- * Lit un fichier/Blob comme une data URL base64, format attendu par `<img>.src` pour
- * charger l'image dans un canvas.
- */
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
-/**
- * Charge une data URL dans un élément `<img>` et attend qu'elle soit décodée, prête à être
- * dessinée sur un canvas.
+ * Charge une URL (data URL ou URL objet) dans un élément `<img>` et attend qu'elle soit
+ * décodée, prête à être dessinée sur un canvas.
  */
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -64,6 +51,21 @@ function loadImage(src) {
     img.onerror = () => reject(new Error(t('error.imageLoad')));
     img.src = src;
   });
+}
+
+/**
+ * Charge un fichier/Blob dans un élément `<img>` décodé, via une URL objet plutôt qu'une
+ * data URL base64 (FileReader.readAsDataURL) : évite l'encodage/décodage base64 et son
+ * surcoût mémoire (~33% de plus que les octets bruts) — un vrai gain sur les grosses images.
+ * L'URL objet est révoquée dès que l'image est chargée (ou en échec).
+ */
+async function loadImageFromBlob(blob) {
+  const url = URL.createObjectURL(blob);
+  try {
+    return await loadImage(url);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 /**
@@ -127,8 +129,7 @@ function autoSvgScale(width, height) {
 async function rasterize(file, targetFormat, { quality = 0.9 } = {}) {
   const svg = isSvgFile(file);
   const sourceBlob = isHeicFile(file) ? await heicToPngBlob(file) : file;
-  const dataUrl = await readFileAsDataUrl(sourceBlob);
-  const img = await loadImage(dataUrl);
+  const img = await loadImageFromBlob(sourceBlob);
 
   const scale = svg ? autoSvgScale(img.naturalWidth, img.naturalHeight) : 1;
   const width = Math.max(1, Math.round((img.naturalWidth || 300) * scale));
@@ -186,11 +187,20 @@ async function rasterize(file, targetFormat, { quality = 0.9 } = {}) {
  */
 function traceToSvg(file) {
   return new Promise((resolve, reject) => {
-    readFileAsDataUrl(file)
-      .then((dataUrl) => {
-        ImageTracer.imageToSVG(dataUrl, (svgString) => resolve(svgString), 'default');
-      })
-      .catch(reject);
+    const url = URL.createObjectURL(file);
+    try {
+      ImageTracer.imageToSVG(
+        url,
+        (svgString) => {
+          URL.revokeObjectURL(url);
+          resolve(svgString);
+        },
+        'default'
+      );
+    } catch (err) {
+      URL.revokeObjectURL(url);
+      reject(err);
+    }
   });
 }
 

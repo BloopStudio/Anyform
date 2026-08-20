@@ -18,19 +18,32 @@ const MAX_DIFF_LINES = 3000;
  * derrière `diff`/`git diff`. dp[i][j] = longueur de la LCS entre linesA[i:] et
  * linesB[j:] ; on la calcule à l'envers puis on "remonte" (backtrack) pour reconstruire
  * la séquence égal/ajouté/supprimé.
+ *
+ * La table dp est stockée à plat dans un seul Int32Array((n+1)×(m+1)) plutôt qu'un tableau
+ * de tableaux JS : jusqu'à 4x moins de mémoire (entiers 32 bits contigus au lieu d'objets
+ * "number" boxés dans (n+1) tableaux séparés) et un accès plus rapide (une seule allocation,
+ * meilleure localité de cache) — significatif au plafond MAX_DIFF_LINES (3000×3000 ≈ 9M
+ * cellules).
  */
 function diffLines(linesA, linesB) {
   const n = linesA.length;
   const m = linesB.length;
-  const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  const stride = m + 1;
+  const dp = new Int32Array((n + 1) * stride);
 
   for (let i = n - 1; i >= 0; i--) {
+    const row = i * stride;
+    const nextRow = row + stride;
     for (let j = m - 1; j >= 0; j--) {
-      dp[i][j] = linesA[i] === linesB[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      dp[row + j] = linesA[i] === linesB[j]
+        ? dp[nextRow + j + 1] + 1
+        : Math.max(dp[nextRow + j], dp[row + j + 1]);
     }
   }
 
   const result = [];
+  let added = 0;
+  let removed = 0;
   let i = 0;
   let j = 0;
   while (i < n && j < m) {
@@ -38,23 +51,29 @@ function diffLines(linesA, linesB) {
       result.push({ type: 'equal', text: linesA[i] });
       i++;
       j++;
-    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+    } else if (dp[(i + 1) * stride + j] >= dp[i * stride + j + 1]) {
       result.push({ type: 'removed', text: linesA[i] });
+      removed++;
       i++;
     } else {
       result.push({ type: 'added', text: linesB[j] });
+      added++;
       j++;
     }
   }
   while (i < n) {
     result.push({ type: 'removed', text: linesA[i] });
+    removed++;
     i++;
   }
   while (j < m) {
     result.push({ type: 'added', text: linesB[j] });
+    added++;
     j++;
   }
 
+  result.added = added;
+  result.removed = removed;
   return result;
 }
 
@@ -101,8 +120,7 @@ async function compareText(fileA, fileB) {
   }
 
   const diff = diffLines(linesA, linesB);
-  const added = diff.filter((d) => d.type === 'added').length;
-  const removed = diff.filter((d) => d.type === 'removed').length;
+  const { added, removed } = diff;
 
   return {
     type: 'text',
@@ -130,8 +148,7 @@ function imageToPixels(img, width, height) {
  * identiques en niveaux de gris atténués, pixels qui changent significativement en rouge.
  */
 async function compareImages(fileA, fileB) {
-  const [dataUrlA, dataUrlB] = await Promise.all([readFileAsDataUrl(fileA), readFileAsDataUrl(fileB)]);
-  const [imgA, imgB] = await Promise.all([loadImage(dataUrlA), loadImage(dataUrlB)]);
+  const [imgA, imgB] = await Promise.all([loadImageFromBlob(fileA), loadImageFromBlob(fileB)]);
 
   const width = Math.min(imgA.naturalWidth, imgB.naturalWidth);
   const height = Math.min(imgA.naturalHeight, imgB.naturalHeight);
