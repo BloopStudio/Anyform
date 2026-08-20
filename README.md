@@ -1,5 +1,7 @@
 # Anyform
 
+![Construire l'app de bureau](https://github.com/BloopStudio/Anyform/actions/workflows/build-desktop.yml/badge.svg)
+
 Développé par **BloopStudio**. Cette branche contient l'application de bureau Electron.
 Les autres façons d'utiliser Anyform :
 
