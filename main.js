@@ -81,7 +81,14 @@ function createWindow() {
       // Aucune API Node (fs, require, etc.) exposée à la page — cohérent avec le fait
       // que le convertisseur tourne entièrement dans le navigateur (ffmpeg.wasm côté client).
       nodeIntegration: false,
-      sandbox: false, // ffmpeg.wasm needs SharedArrayBuffer/worker features
+      // Sandbox OS (Chromium) activé pour le renderer : preload.js est vide (aucun besoin
+      // Node) et ffmpeg.wasm n'a en réalité jamais accès à SharedArrayBuffer ici (la page
+      // n'est pas cross-origin isolated, sandbox ou non — vérifié en conditions réelles :
+      // typeof SharedArrayBuffer reste 'undefined' avec sandbox:false comme avec
+      // sandbox:true) ; ffmpeg.wasm utilise son cœur mono-thread, qui n'en a pas besoin.
+      // Activer le sandbox ne change donc rien au fonctionnement mais ajoute une vraie
+      // couche de défense en profondeur si le renderer était un jour compromis.
+      sandbox: true,
     },
   });
 
