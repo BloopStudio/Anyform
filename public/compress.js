@@ -128,27 +128,6 @@ async function recompressJpegBytes(bytes, quality) {
   }
 }
 
-/**
- * Compresse un PDF en recompressant les images JPEG (DCTDecode) qu'il contient. N'utilise
- * aucune bibliothèque PDF : reconstruit le fichier objet par objet — chaque objet non
- * modifié est recopié tel quel, octet pour octet, seuls les objets image retenus sont
- * réécrits avec leur nouveau flux JPEG et une /Length à jour — puis une table de références
- * croisées classique est régénérée avec les nouveaux offsets (obligatoire : dès qu'un objet
- * change de taille, tous ceux qui le suivent changent de position dans le fichier).
- *
- * Volontairement PAS de mise à jour incrémentale (mécanisme standard du PDF, plus simple à
- * écrire) : elle ne fait qu'ajouter à la suite du fichier sans jamais retirer les anciennes
- * données, donc un fichier "compressé" de cette façon ne rétrécit jamais — inutile pour un
- * compresseur.
- *
- * Se limite aux PDF "classiques" (objets individuellement visibles via une recherche
- * "N G obj...endobj", génération 0) : un PDF utilisant des flux d'objets compressés
- * (PDF 1.5+, /Type /ObjStm) a des objets invisibles à cette recherche — les reconstruire
- * sans tous les connaître romprait le fichier, donc on ne touche à rien dans ce cas plutôt
- * que de risquer un PDF corrompu.
- * @param {File} file
- * @param {'light'|'medium'|'strong'} level
- */
 // Découpe le texte latin1 d'un PDF en objets ("N G obj" ... "endobj") en repérant chaque
 // en-tête d'objet par regex puis en cherchant le "endobj" suivant par simple recherche de
 // sous-chaîne (indexOf), plutôt que par un unique motif glouton `obj([\s\S]*?)endobj` sur
@@ -179,6 +158,27 @@ function extractPdfObjects(text) {
   return objects;
 }
 
+/**
+ * Compresse un PDF en recompressant les images JPEG (DCTDecode) qu'il contient. N'utilise
+ * aucune bibliothèque PDF : reconstruit le fichier objet par objet — chaque objet non
+ * modifié est recopié tel quel, octet pour octet, seuls les objets image retenus sont
+ * réécrits avec leur nouveau flux JPEG et une /Length à jour — puis une table de références
+ * croisées classique est régénérée avec les nouveaux offsets (obligatoire : dès qu'un objet
+ * change de taille, tous ceux qui le suivent changent de position dans le fichier).
+ *
+ * Volontairement PAS de mise à jour incrémentale (mécanisme standard du PDF, plus simple à
+ * écrire) : elle ne fait qu'ajouter à la suite du fichier sans jamais retirer les anciennes
+ * données, donc un fichier "compressé" de cette façon ne rétrécit jamais — inutile pour un
+ * compresseur.
+ *
+ * Se limite aux PDF "classiques" (objets individuellement visibles via une recherche
+ * "N G obj...endobj", génération 0) : un PDF utilisant des flux d'objets compressés
+ * (PDF 1.5+, /Type /ObjStm) a des objets invisibles à cette recherche — les reconstruire
+ * sans tous les connaître romprait le fichier, donc on ne touche à rien dans ce cas plutôt
+ * que de risquer un PDF corrompu.
+ * @param {File} file
+ * @param {'light'|'medium'|'strong'} level
+ */
 async function compressPdf(file, level = 'medium') {
   const buffer = await file.arrayBuffer();
   const bytes = new Uint8Array(buffer);
