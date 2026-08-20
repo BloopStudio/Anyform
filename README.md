@@ -1,5 +1,7 @@
 # Anyform
 
+![Publier sur npm](https://github.com/BloopStudio/Anyform/actions/workflows/publish-npm.yml/badge.svg)
+
 Convertisseur de formats de fichiers (images, données, audio, vidéo, sous-titres), 100%
 local — bibliothèque Node.js. Développé par **BloopStudio**. Même code que
 [`cli-converter`](https://github.com/BloopStudio/Anyform/tree/cli-converter) (la ligne de
