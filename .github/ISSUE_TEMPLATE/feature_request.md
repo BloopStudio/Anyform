@@ -3,6 +3,8 @@ name: Proposer une fonctionnalité
 about: Suggérer une idée pour Anyform (nouveau format, amélioration...)
 title: "[Feature] "
 labels: enhancement
+assignees: ''
+
 ---
 
 **Quelle forme d'Anyform ?**
@@ -10,6 +12,7 @@ labels: enhancement
 - [ ] CLI
 - [ ] Extension navigateur
 - [ ] App de bureau
+- [ ] Librairie node
 - [ ] Toutes / peu importe
 
 **Le problème à résoudre**

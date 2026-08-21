@@ -2,7 +2,9 @@
 name: Signaler un bug
 about: Décrire un problème rencontré avec Anyform
 title: "[Bug] "
-labels: bug
+labels: bug, enhancement
+assignees: ''
+
 ---
 
 **Quelle forme d'Anyform ?**
