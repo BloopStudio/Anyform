@@ -29,6 +29,16 @@ function isHeicFile(file) {
 }
 
 /**
+ * Détecte un fichier TIFF via son extension ou son type MIME — nécessaire pour savoir s'il
+ * faut le décoder via UTIF.js plutôt qu'un `<img>` classique, aucun navigateur ne sachant
+ * afficher du TIFF nativement (contrairement à HEIC, où seul le décodage manque : ici c'est
+ * l'affichage lui-même qui est absent).
+ */
+function isTiffFile(file) {
+  return /\.tiff?$/i.test(file.name) || file.type === 'image/tiff';
+}
+
+/**
  * Lit un fichier comme texte brut (utilisé pour le SVG, format texte).
  */
 function readFileAsText(file) {
@@ -123,17 +133,57 @@ function autoSvgScale(width, height) {
 }
 
 /**
- * Dessine une image source (SVG, HEIC ou raster) sur un canvas et retourne un blob dans le
- * format cible.
+ * Décode un TIFF via UTIF.js (aucun navigateur ne le fait nativement) et dessine ses pixels
+ * sur un canvas hors-écran aux dimensions du fichier — utilisé comme source dessinable par
+ * getSourceDrawable(), au lieu d'un `<img>` classique.
  */
-async function rasterize(file, targetFormat, { quality = 0.9 } = {}) {
-  const svg = isSvgFile(file);
+async function tiffToCanvas(file) {
+  const buffer = await file.arrayBuffer();
+  const ifds = UTIF.decode(buffer);
+  UTIF.decodeImage(buffer, ifds[0]);
+  const rgba = UTIF.toRGBA8(ifds[0]);
+  const { width, height } = ifds[0];
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const imageData = new ImageData(new Uint8ClampedArray(rgba.buffer, rgba.byteOffset, rgba.byteLength), width, height);
+  // putImageData remplace les pixels sans passer par la compositing alpha du canvas — voir
+  // getSourceDrawable() : drawInto() redessine ce canvas via drawImage plutôt que de
+  // réutiliser putImageData, pour que le fond blanc JPEG (rasterize()) s'applique correctement.
+  canvas.getContext('2d').putImageData(imageData, 0, 0);
+  return canvas;
+}
+
+/**
+ * Prépare l'image source (SVG, HEIC, TIFF ou raster classique) sous une forme dessinable de
+ * façon uniforme sur un canvas cible via `drawInto(ctx)` (toujours `drawImage`, jamais
+ * `putImageData`, pour que le fond blanc JPEG de rasterize() compose correctement avec la
+ * transparence de la source) — chaque format a une façon différente d'obtenir ses pixels
+ * (décodage `<img>` natif pour la plupart, UTIF.js pour le TIFF que le navigateur ne sait
+ * pas afficher).
+ */
+async function getSourceDrawable(file, svg) {
+  if (isTiffFile(file)) {
+    const canvas = await tiffToCanvas(file);
+    return { width: canvas.width, height: canvas.height, drawInto: (ctx) => ctx.drawImage(canvas, 0, 0) };
+  }
+
   const sourceBlob = isHeicFile(file) ? await heicToPngBlob(file) : file;
   const img = await loadImageFromBlob(sourceBlob);
-
   const scale = svg ? autoSvgScale(img.naturalWidth, img.naturalHeight) : 1;
   const width = Math.max(1, Math.round((img.naturalWidth || 300) * scale));
   const height = Math.max(1, Math.round((img.naturalHeight || 300) * scale));
+  return { width, height, drawInto: (ctx) => ctx.drawImage(img, 0, 0, width, height) };
+}
+
+/**
+ * Dessine une image source (SVG, HEIC, TIFF ou raster) sur un canvas et retourne un blob
+ * dans le format cible.
+ */
+async function rasterize(file, targetFormat, { quality = 0.9 } = {}) {
+  const svg = isSvgFile(file);
+  const { width, height, drawInto } = await getSourceDrawable(file, svg);
 
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -146,7 +196,7 @@ async function rasterize(file, targetFormat, { quality = 0.9 } = {}) {
     ctx.fillRect(0, 0, width, height);
   }
 
-  ctx.drawImage(img, 0, 0, width, height);
+  drawInto(ctx);
 
   if (targetFormat === 'tiff') {
     return canvasToTiffBlob(canvas);
