@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Anyform",
-  "version": "1.0.29",
+  "version": "1.0.30",
   "description": "Convertit images, données (CSV/JSON/XLSX), audio et vidéo directement dans le navigateur, sans rien envoyer sur internet.",
   "author": "BloopStudio",
   "icons": {
