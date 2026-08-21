@@ -88,7 +88,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh run list --repo "${{ github.repository }}" --workflow "bump-version.yml" \
+          gh run list --repo "${{ github.repository }}" --workflow "publish-extension.yml" \
             --json databaseId,createdAt --limit 100 \
             --jq 'sort_by(.createdAt) | reverse | .[10:] | .[].databaseId' | while read -r id; do
             echo "Suppression du run obsolète : $id"
