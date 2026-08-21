@@ -73,8 +73,7 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
     const res = await fetch(info.srcUrl);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const blob = await res.blob();
-    const buffer = await blob.arrayBuffer();
-    const dataUrl = `data:${blob.type || 'image/png'};base64,${arrayBufferToBase64(buffer)}`;
+    const dataUrl = await blobToDataUrl(blob);
     const name = guessFileName(info.srcUrl, blob.type);
 
     await chrome.storage.local.set({ pendingFile: { dataUrl, name, type: blob.type } });
@@ -84,19 +83,17 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
   }
 });
 
-/**
- * Encode un ArrayBuffer en base64 par blocs (chunks de 32 Ko) plutôt qu'en un seul appel à
- * String.fromCharCode.apply : passer un buffer entier d'un coup peut dépasser la limite
- * d'arguments d'un appel de fonction du moteur JS pour de grosses images.
- */
-function arrayBufferToBase64(buffer) {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
-  }
-  return btoa(binary);
+// Encode un Blob en data URL via l'implémentation native du navigateur (FileReader, dispo
+// dans un service worker MV3) plutôt qu'un aller-retour arrayBuffer() + boucle de chunks
+// manuelle + btoa() : plus rapide (pas de copie intermédiaire du buffer entier en JS) et
+// sans limite de taille à surveiller côté appelant.
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }
 
 /**
