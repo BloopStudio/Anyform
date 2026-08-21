@@ -823,10 +823,12 @@ async function inspectVideo(file) {
 // de sheet_to_json) : un CSV comme "2020-01-15" est reconnu par SheetJS comme un nombre
 // (cell.t === 'n', sans format de date associé puisque le CSV n'a pas de mise en forme) —
 // seul cell.w (le texte d'origine formaté) garde encore l'apparence de date à tester.
-function inferColumnTypes(sheet, rows) {
+// `columnCount` est déjà connu de l'appelant (inspectData) : recalculer
+// Math.max(...rows.map(r => r.length)) une seconde fois ici referait le même parcours de
+// `rows` (et la même allocation temporaire) pour rien sur un classeur volumineux.
+function inferColumnTypes(sheet, rows, columnCount) {
   if (rows.length < 2) return null;
   const headers = rows[0];
-  const columnCount = Math.max(...rows.map((r) => r.length));
   const sampleRowCount = Math.min(rows.length - 1, 50);
   const dominants = [];
 
@@ -860,7 +862,7 @@ async function inspectData(file) {
   items.push({ label: t('inspect.rows'), value: String(rows.length) });
   items.push({ label: t('inspect.columns'), value: String(columnCount) });
   if (rows.length) items.push({ label: t('inspect.headers'), value: rows[0].join(', ') });
-  const columnTypes = inferColumnTypes(sheet, rows);
+  const columnTypes = inferColumnTypes(sheet, rows, columnCount);
   if (columnTypes) items.push({ label: t('inspect.columnTypes'), value: columnTypes });
   return items;
 }
