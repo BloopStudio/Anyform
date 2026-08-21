@@ -1,5 +1,7 @@
 # Anyform — extension navigateur
 
+![Publier l'extension](https://github.com/BloopStudio/Anyform/actions/workflows/bump-version.yml/badge.svg)
+
 Développée par **BloopStudio**. Cette branche contient l'extension Chrome/Edge, dans le
 dossier [`extension/`](extension/) — voir **[extension/README.md](extension/README.md)**
 pour la documentation complète (fonctionnalités, installation, permissions, structure).

@@ -1,4 +1,4 @@
-name: Incrémenter la version et publier sur le Web Store
+name: Publier l'extension
 
 on:
   push:
