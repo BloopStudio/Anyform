@@ -1024,6 +1024,8 @@ function hideBatchResults() {
  * ZIP — jamais un téléchargement automatique groupé, qui déclencherait l'anti-popup du
  * navigateur sur plusieurs fichiers à la fois). Les échecs restent dans la liste (barrés,
  * message d'erreur) plutôt que d'être passés sous silence.
+ * @returns {Array} les entrées de `results` sans erreur (évite à l'appelant de refiltrer
+ * le même tableau juste après, voir runBatchConvertOrCompress).
  */
 function renderBatchResults(results) {
   batchResultsList.innerHTML = '';
@@ -1081,6 +1083,7 @@ function renderBatchResults(results) {
     : null;
 
   batchResultsSection.hidden = false;
+  return successes;
 }
 
 /**
@@ -1117,9 +1120,7 @@ async function runBatchConvertOrCompress() {
   }
 
   setStatus('');
-  renderBatchResults(results);
-
-  const successes = results.filter((r) => !r.error);
+  const successes = renderBatchResults(results);
   if (
     successes.length &&
     (category === 'audio' || category === 'video') &&
