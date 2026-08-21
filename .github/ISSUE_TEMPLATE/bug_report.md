@@ -12,6 +12,7 @@ assignees: ''
 - [ ] CLI
 - [ ] Extension navigateur
 - [ ] App de bureau
+- [ ] Librairie node
 
 **Description du bug**
 Décrire clairement le problème rencontré.
