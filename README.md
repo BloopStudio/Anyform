@@ -127,9 +127,9 @@ restent visibles avec leur erreur, n'interrompent pas le reste du lot. Voir
 
 ## Formats supportés (Convertisseur)
 
-- Images : SVG, PNG, JPG, WebP, GIF, BMP, HEIC en entrée ⇄ PNG/JPG/WebP/AVIF/ICO/TIFF/SVG en
-  sortie (vectorisation raster → SVG incluse via ImageTracer.js, décodage HEIC via
-  `heic2any`/libheif WASM)
+- Images : SVG, PNG, JPG, WebP, AVIF, GIF, BMP, TIFF, HEIC en entrée ⇄
+  PNG/JPG/WebP/AVIF/ICO/TIFF/SVG en sortie (vectorisation raster → SVG incluse via
+  ImageTracer.js, décodage HEIC via `heic2any`/libheif WASM)
 - Audio : WAV, MP3, OGG, M4A, FLAC, AAC, WMA, Opus (moteur ffmpeg.wasm)
 - Vidéo : MP4, WebM, MOV, MKV, AVI, FLV, OGV en entrée ⇄ les mêmes + GIF animé en sortie
   (moteur ffmpeg.wasm)
