@@ -18,8 +18,8 @@ locale (rien n'est envoyé sur internet).
 
 ## Formats supportés
 
-**Convertisseur** — mêmes formats que l'app web : images (SVG/PNG/JPG/WebP/GIF/BMP/HEIC en
-entrée, + AVIF/ICO/TIFF en sortie), données (CSV/JSON/XLSX), audio
+**Convertisseur** — mêmes formats que l'app web : images (SVG/PNG/JPG/WebP/AVIF/GIF/BMP/TIFF/
+HEIC en entrée, + ICO en sortie), données (CSV/JSON/XLSX), audio
 (WAV/MP3/OGG/M4A/FLAC/AAC/WMA/Opus), vidéo (MP4/WebM/MOV/MKV/AVI/FLV/OGV + GIF animé en
 sortie) via le moteur ffmpeg.wasm vendorisé localement, et sous-titres (SRT/VTT/ASS, texte
 pur — voir `subtitles.js`).
