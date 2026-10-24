@@ -43,8 +43,8 @@ exposent les mêmes fonctions via `-c`/`info`/`diff` plutôt que des onglets) :
 
 ## Formats supportés
 
-- **Images** : SVG, PNG, JPG, WebP, GIF, BMP, HEIC en entrée ⇄ PNG/JPG/WebP/AVIF/ICO/TIFF/SVG
-  en sortie (vectorisation raster → SVG, décodage HEIC)
+- **Images** : SVG, PNG, JPG, WebP, AVIF, GIF, BMP, TIFF, HEIC en entrée ⇄
+  PNG/JPG/WebP/AVIF/ICO/TIFF/SVG en sortie (vectorisation raster → SVG, décodage HEIC)
 - **Audio** : WAV, MP3, OGG, M4A, FLAC, AAC, WMA, Opus
 - **Vidéo** : MP4, WebM, MOV, MKV, AVI, FLV, OGV en entrée ⇄ les mêmes + GIF animé en sortie
 - **Données** : CSV ⇄ JSON ⇄ XLSX
